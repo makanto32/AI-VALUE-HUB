@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Opportunity Hub - Vistas</title>
+    <style>
+      :root {
+        --bg: #07111f;
+        --panel: #0f1c33;
+        --panel-2: #142742;
+        --text: #f4f7ff;
+        --muted: #9eb0cf;
+        --accent: #4f9cf0;
+        --accent-2: #22c9a0;
+        --line: rgba(255,255,255,0.12);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, var(--bg), #0b1628 55%, #101d31);
+        color: var(--text);
+      }
+      .page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 20px 60px;
+      }
+      .hero {
+        background: rgba(15, 28, 51, 0.9);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        padding: 28px;
+        box-shadow: 0 18px 40px rgba(0,0,0,.25);
+      }
+      .hero h1 { margin: 0 0 10px; font-size: 2rem; }
+      .hero p { margin: 0; color: var(--muted); max-width: 760px; line-height: 1.6; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+        margin-top: 24px;
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        background: linear-gradient(180deg, var(--panel), var(--panel-2));
+        min-height: 220px;
+      }
+      .card h2 { margin: 0 0 8px; font-size: 1.1rem; }
+      .card p { margin: 0; color: var(--muted); line-height: 1.5; }
+      .card a {
+        display: inline-block;
+        margin-top: 14px;
+        padding: 10px 14px;
+        text-decoration: none;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        color: #fff;
+        font-weight: 700;
+        width: fit-content;
+      }
+      .badge {
+        display: inline-block;
+        width: fit-content;
+        margin-bottom: 10px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(79, 156, 240, 0.16);
+        color: #8fbcf7;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="hero">
+        <h1>AI Opportunity Hub</h1>
+        <p>Estas vistas están preparadas para abrirse como páginas web desde el repositorio y servir como referencia visual para la arquitectura, el demos y los diagramas del proyecto.</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div>
+            <span class="badge">Arquitectura</span>
+            <h2>Arquitectura detallada</h2>
+            <p>Vista profesional del diseño de alto nivel y los componentes principales del sistema.</p>
+          </div>
+          <a href="architecture-diagram.html" target="_blank" rel="noopener">Abrir</a>
+        </div>
+
+        <div class="card">
+          <div>
+            <span class="badge">Arquitectura</span>
+            <h2>Arquitectura detallada (ES)</h2>
+            <p>Versión en español de la arquitectura para compartir con stakeholders y equipos.</p>
+          </div>
+          <a href="architecture-diagram.es.html" target="_blank" rel="noopener">Abrir</a>
+        </div>
+
+        <div class="card">
+          <div>
+            <span class="badge">Demo</span>
+            <h2>AI Value Hub Demo</h2>
+            <p>Presentación visual del flujo del demo y los bloques de valor del producto.</p>
+          </div>
+          <a href="ai-value-hub-demo.html" target="_blank" rel="noopener">Abrir</a>
+        </div>
+
+        <div class="card">
+          <div>
+            <span class="badge">Referencia</span>
+            <h2>Use Case Factory</h2>
+            <p>Documento ejecutivo y de referencia sobre el contexto de negocio y la propuesta de arquitectura.</p>
+          </div>
+          <a href="AI_Use_Case_Factory_Company_Context_Engine_EN.html" target="_blank" rel="noopener">Abrir</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
