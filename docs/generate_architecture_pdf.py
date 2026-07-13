@@ -73,32 +73,80 @@ reuse_items = [
 story.append(ListFlowable([ListItem(Paragraph(item, styles['ClientBullet'])) for item in reuse_items], bulletType='bullet'))
 story.append(Spacer(1, 0.3 * cm))
 
-story.append(Paragraph("6. Architecture Diagram", styles['ClientHeading']))
+story.append(Paragraph("6. Architecture Summary", styles['ClientHeading']))
 story.append(Paragraph("A visual summary of the solution follows.", styles['ClientCaption']))
 
-# simple vector diagram
-drawing = Drawing(16 * cm, 6 * cm)
-# background
-drawing.add(Rect(0.2 * cm, 0.2 * cm, 15.6 * cm, 5.6 * cm, fillColor=colors.HexColor('#f8fbff'), strokeColor=colors.HexColor('#d7e7f7'), strokeWidth=1))
-# boxes
+# Overview diagram
+overview = Drawing(16 * cm, 6 * cm)
+overview.add(Rect(0.2 * cm, 0.2 * cm, 15.6 * cm, 5.6 * cm, fillColor=colors.HexColor('#f8fbff'), strokeColor=colors.HexColor('#d7e7f7'), strokeWidth=1))
 box_style = dict(fillColor=colors.HexColor('#e8f2ff'), strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2)
-drawing.add(Rect(1.0 * cm, 3.5 * cm, 3.0 * cm, 1.2 * cm, **box_style))
-drawing.add(String(1.4 * cm, 3.95 * cm, 'Users / Clients'))
-drawing.add(Rect(5.0 * cm, 3.5 * cm, 3.0 * cm, 1.2 * cm, **box_style))
-drawing.add(String(5.45 * cm, 3.95 * cm, 'Frontend'))
-drawing.add(Rect(9.0 * cm, 3.5 * cm, 3.0 * cm, 1.2 * cm, **box_style))
-drawing.add(String(9.35 * cm, 3.95 * cm, 'API / Orchestrator'))
-drawing.add(Rect(5.0 * cm, 1.0 * cm, 3.0 * cm, 1.2 * cm, **box_style))
-drawing.add(String(5.25 * cm, 1.45 * cm, 'Data / Storage'))
-# arrows
+overview.add(Rect(1.0 * cm, 3.5 * cm, 3.0 * cm, 1.2 * cm, **box_style))
+overview.add(String(1.4 * cm, 3.95 * cm, 'Users / Clients'))
+overview.add(Rect(5.0 * cm, 3.5 * cm, 3.0 * cm, 1.2 * cm, **box_style))
+overview.add(String(5.45 * cm, 3.95 * cm, 'Frontend'))
+overview.add(Rect(9.0 * cm, 3.5 * cm, 3.0 * cm, 1.2 * cm, **box_style))
+overview.add(String(9.35 * cm, 3.95 * cm, 'API / Orchestrator'))
+overview.add(Rect(5.0 * cm, 1.0 * cm, 3.0 * cm, 1.2 * cm, **box_style))
+overview.add(String(5.25 * cm, 1.45 * cm, 'Data / Storage'))
 for x1, y1, x2, y2 in [(4.0, 4.1, 5.0, 4.1), (8.0, 4.1, 9.0, 4.1), (6.5, 3.5, 6.5, 2.2)]:
-    drawing.add(Line(x1 * cm, y1 * cm, x2 * cm, y2 * cm, strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
-drawing.add(PolyLine([(3.5*cm, 4.1*cm),(3.8*cm, 4.1*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
-drawing.add(PolyLine([(8.2*cm, 4.1*cm),(8.8*cm, 4.1*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
-drawing.add(PolyLine([(6.5*cm, 3.5*cm),(6.5*cm, 2.2*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
-story.append(drawing)
+    overview.add(Line(x1 * cm, y1 * cm, x2 * cm, y2 * cm, strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
+overview.add(PolyLine([(3.5*cm, 4.1*cm),(3.8*cm, 4.1*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
+overview.add(PolyLine([(8.2*cm, 4.1*cm),(8.8*cm, 4.1*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
+overview.add(PolyLine([(6.5*cm, 3.5*cm),(6.5*cm, 2.2*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.2))
+story.append(overview)
 story.append(Spacer(1, 0.3 * cm))
 story.append(Paragraph("This document is intended as a client-facing reference for architecture understanding, reuse, and implementation planning.", styles['ClientCaption']))
+
+story.append(PageBreak())
+story.append(Paragraph("Tab 1 - System Flow Diagram", styles['ClientHeading']))
+story.append(Paragraph("This view illustrates how a request moves through the platform from user interaction to generated architecture output.", styles['ClientBody']))
+story.append(Spacer(1, 0.25 * cm))
+
+flow_diagram = Drawing(16 * cm, 8 * cm)
+flow_diagram.add(Rect(0.2 * cm, 0.2 * cm, 15.6 * cm, 7.6 * cm, fillColor=colors.HexColor('#fcfeff'), strokeColor=colors.HexColor('#d7e7f7'), strokeWidth=1))
+flow_boxes = [
+    (1.0, 5.8, 3.2, 1.2, 'User / Client'),
+    (5.0, 5.8, 3.2, 1.2, 'Frontend'),
+    (9.0, 5.8, 3.2, 1.2, 'API Layer'),
+    (5.0, 3.4, 3.2, 1.2, 'Validation Logic'),
+    (5.0, 1.0, 3.2, 1.2, 'Architecture Output'),
+    (11.0, 3.4, 3.2, 1.2, 'Storage / Artifacts')
+]
+for x, y, w, h, label in flow_boxes:
+    flow_diagram.add(Rect(x * cm, y * cm, w * cm, h * cm, fillColor=colors.HexColor('#edf6ff'), strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.1))
+    flow_diagram.add(String((x + 0.4) * cm, (y + 0.5) * cm, label))
+for x1, y1, x2, y2 in [(4.2, 6.4, 5.0, 6.4), (8.2, 6.4, 9.0, 6.4), (6.6, 5.8, 6.6, 4.6), (8.2, 4.0, 11.0, 4.0), (11.0, 3.4, 10.2, 2.2)]:
+    flow_diagram.add(Line(x1 * cm, y1 * cm, x2 * cm, y2 * cm, strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.1))
+flow_diagram.add(PolyLine([(6.6*cm, 3.4*cm),(6.6*cm, 2.2*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.1))
+flow_diagram.add(PolyLine([(8.2*cm, 6.4*cm),(8.8*cm, 6.4*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.1))
+story.append(flow_diagram)
+story.append(Spacer(1, 0.3 * cm))
+story.append(Paragraph("Flow summary: capture idea → validate feasibility → generate architecture package → persist outputs and share results.", styles['ClientCaption']))
+
+story.append(PageBreak())
+story.append(Paragraph("Tab 2 - Component Diagram", styles['ClientHeading']))
+story.append(Paragraph("This view shows the main software components and their interaction boundaries for implementation and extension.", styles['ClientBody']))
+story.append(Spacer(1, 0.25 * cm))
+
+component_diagram = Drawing(16 * cm, 8 * cm)
+component_diagram.add(Rect(0.2 * cm, 0.2 * cm, 15.6 * cm, 7.6 * cm, fillColor=colors.HexColor('#fcfeff'), strokeColor=colors.HexColor('#d7e7f7'), strokeWidth=1))
+component_boxes = [
+    (1.0, 6.0, 3.2, 1.2, 'Frontend UI'),
+    (5.0, 6.0, 3.2, 1.2, 'API Services'),
+    (9.0, 6.0, 3.2, 1.2, 'Authentication'),
+    (3.0, 3.6, 3.2, 1.2, 'Validation Engine'),
+    (7.0, 3.6, 3.2, 1.2, 'Context Engine'),
+    (5.0, 1.2, 3.2, 1.2, 'Persistence / Blob'),
+]
+for x, y, w, h, label in component_boxes:
+    component_diagram.add(Rect(x * cm, y * cm, w * cm, h * cm, fillColor=colors.HexColor('#f2f8ff'), strokeColor=colors.HexColor('#2563eb'), strokeWidth=1.1))
+    component_diagram.add(String((x + 0.3) * cm, (y + 0.5) * cm, label))
+for x1, y1, x2, y2 in [(4.2, 6.6, 5.0, 6.6), (8.2, 6.6, 9.0, 6.6), (4.6, 3.6, 5.0, 2.4), (8.6, 3.6, 7.0, 2.4), (6.6, 3.6, 6.6, 2.4)]:
+    component_diagram.add(Line(x1 * cm, y1 * cm, x2 * cm, y2 * cm, strokeColor=colors.HexColor('#2563eb'), strokeWidth=1.1))
+component_diagram.add(PolyLine([(6.6*cm, 3.6*cm),(6.6*cm, 2.4*cm)], strokeColor=colors.HexColor('#2563eb'), strokeWidth=1.1))
+story.append(component_diagram)
+story.append(Spacer(1, 0.3 * cm))
+story.append(Paragraph("Component summary: UI, API, validation, context, storage and identity layers can evolve independently for future enterprise deployments.", styles['ClientCaption']))
 
 # Build pdf
 pdf = SimpleDocTemplate(output_path, pagesize=A4, rightMargin=2.2 * cm, leftMargin=2.2 * cm, topMargin=2.0 * cm, bottomMargin=2.0 * cm)
