@@ -40,6 +40,10 @@ Endpoints MVP2 agregados:
 - `infra`: reservado para IaC en siguientes MVPs.
 - `docs`: notas de alcance por MVP.
 
+## Documentación de referencia para clientes
+- Guía de arquitectura: [docs/CLIENT_ARCHITECTURE_REFERENCE.md](docs/CLIENT_ARCHITECTURE_REFERENCE.md)
+- Diagrama profesional en PDF: [docs/AI_Opportunity_Hub_Architecture_Reference.pdf](docs/AI_Opportunity_Hub_Architecture_Reference.pdf)
+
 ## Ejecutar API
 ```bash
 pip install -r requirements.txt
