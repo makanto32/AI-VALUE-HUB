@@ -148,6 +148,55 @@ story.append(component_diagram)
 story.append(Spacer(1, 0.3 * cm))
 story.append(Paragraph("Component summary: UI, API, validation, context, storage and identity layers can evolve independently for future enterprise deployments.", styles['ClientCaption']))
 
+story.append(PageBreak())
+story.append(Paragraph("Tab 3 - Frontend Flow Diagram", styles['ClientHeading']))
+story.append(Paragraph("This view shows how the user interface drives the ideation and review experience end-to-end.", styles['ClientBody']))
+story.append(Spacer(1, 0.25 * cm))
+
+frontend_diagram = Drawing(16 * cm, 8 * cm)
+frontend_diagram.add(Rect(0.2 * cm, 0.2 * cm, 15.6 * cm, 7.6 * cm, fillColor=colors.HexColor('#fcfeff'), strokeColor=colors.HexColor('#d7e7f7'), strokeWidth=1))
+frontend_boxes = [
+    (1.0, 6.0, 3.0, 1.2, 'Login / Session'),
+    (4.8, 6.0, 3.0, 1.2, 'Idea Capture'),
+    (8.6, 6.0, 3.0, 1.2, 'Context Review'),
+    (4.8, 3.6, 3.0, 1.2, 'Technical Validation'),
+    (4.8, 1.2, 3.0, 1.2, 'Results / Actions')
+]
+for x, y, w, h, label in frontend_boxes:
+    frontend_diagram.add(Rect(x * cm, y * cm, w * cm, h * cm, fillColor=colors.HexColor('#eef7ff'), strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.1))
+    frontend_diagram.add(String((x + 0.3) * cm, (y + 0.5) * cm, label))
+for x1, y1, x2, y2 in [(4.0, 6.6, 4.8, 6.6), (7.8, 6.6, 8.6, 6.6), (6.3, 3.6, 6.3, 2.4), (6.3, 3.6, 6.3, 2.4)]:
+    frontend_diagram.add(Line(x1 * cm, y1 * cm, x2 * cm, y2 * cm, strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.1))
+frontend_diagram.add(PolyLine([(6.3*cm, 3.6*cm),(6.3*cm, 2.4*cm)], strokeColor=colors.HexColor('#0f4c81'), strokeWidth=1.1))
+story.append(frontend_diagram)
+story.append(Spacer(1, 0.3 * cm))
+story.append(Paragraph("Frontend flow: session → capture idea → review context → validate and present guidance.", styles['ClientCaption']))
+
+story.append(PageBreak())
+story.append(Paragraph("Tab 4 - Backend and API Layer Flow", styles['ClientHeading']))
+story.append(Paragraph("This view describes the backend orchestration and API interactions behind the experience.", styles['ClientBody']))
+story.append(Spacer(1, 0.25 * cm))
+
+backend_diagram = Drawing(16 * cm, 8 * cm)
+backend_diagram.add(Rect(0.2 * cm, 0.2 * cm, 15.6 * cm, 7.6 * cm, fillColor=colors.HexColor('#fcfeff'), strokeColor=colors.HexColor('#d7e7f7'), strokeWidth=1))
+backend_boxes = [
+    (1.0, 6.0, 3.2, 1.2, 'Client Request'),
+    (4.8, 6.0, 3.2, 1.2, 'API Router'),
+    (8.8, 6.0, 3.2, 1.2, 'Auth / Session'),
+    (4.8, 3.6, 3.2, 1.2, 'Business Services'),
+    (8.8, 3.6, 3.2, 1.2, 'Validation + Context'),
+    (6.8, 1.2, 3.2, 1.2, 'Storage / Output')
+]
+for x, y, w, h, label in backend_boxes:
+    backend_diagram.add(Rect(x * cm, y * cm, w * cm, h * cm, fillColor=colors.HexColor('#f5f9ff'), strokeColor=colors.HexColor('#2563eb'), strokeWidth=1.1))
+    backend_diagram.add(String((x + 0.3) * cm, (y + 0.5) * cm, label))
+for x1, y1, x2, y2 in [(4.2, 6.6, 4.8, 6.6), (8.0, 6.6, 8.8, 6.6), (6.4, 3.6, 6.8, 2.4), (9.6, 3.6, 8.8, 2.4)]:
+    backend_diagram.add(Line(x1 * cm, y1 * cm, x2 * cm, y2 * cm, strokeColor=colors.HexColor('#2563eb'), strokeWidth=1.1))
+backend_diagram.add(PolyLine([(6.8*cm, 3.6*cm),(6.8*cm, 2.4*cm)], strokeColor=colors.HexColor('#2563eb'), strokeWidth=1.1))
+story.append(backend_diagram)
+story.append(Spacer(1, 0.3 * cm))
+story.append(Paragraph("Backend flow: route request → authenticate → invoke services → persist artifacts and return response.", styles['ClientCaption']))
+
 # Build pdf
 pdf = SimpleDocTemplate(output_path, pagesize=A4, rightMargin=2.2 * cm, leftMargin=2.2 * cm, topMargin=2.0 * cm, bottomMargin=2.0 * cm)
 pdf.build(story)
