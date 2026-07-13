@@ -2,6 +2,16 @@
 
 Base inicial del proyecto alineada al roadmap del documento de arquitectura.
 
+## 🚀 Vistas de Arquitectura (Live)
+
+Accede directamente a las vistas visuales del proyecto en GitHub Pages:
+
+- **📊 [Centro de Control](https://makanto32.github.io/AI-Opportunity-Hub/)** - Menú de navegación principal
+- **💡 [AI Value Hub Demo](https://makanto32.github.io/AI-Opportunity-Hub/ai-value-hub-demo.html)** - Flujo visual del demo
+- **🏗️ [Arquitectura (EN)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.html)** - Diagrama técnico completo
+- **🏗️ [Arquitectura (ES)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.es.html)** - Versión en español
+- **📖 [Use Case Factory](https://makanto32.github.io/AI-Opportunity-Hub/AI_Use_Case_Factory_Company_Context_Engine_EN.html)** - Documento de referencia ejecutivo
+
 ## MVP1 implementado
 - Idea intake.
 - Context Engine por tenant para evaluar viabilidad con linea base de negocio.
