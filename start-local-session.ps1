@@ -2,7 +2,7 @@ param(
     [string]$ApiHost = "127.0.0.1",
     [int]$ApiPort = 8000,
     [string]$FrontendHost = "127.0.0.1",
-    [int]$FrontendPort = 5173,
+    [int]$FrontendPort = 5174,
     [switch]$NoBrowser
 )
 
