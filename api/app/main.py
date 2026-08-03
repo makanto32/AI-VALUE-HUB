@@ -8,6 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .blob_storage import upload_context_file as upload_context_file_blob
+from .matching_service import (
+    find_related_initiatives,
+    create_matching_result,
+    build_initiatives_catalog,
+)
 from .models import (
     ArchitectureComponent,
     ArchitectureConsumptionEstimate,
@@ -25,10 +30,12 @@ from .models import (
     ContextSnapshot,
     ContextFileUploadResponse,
     IdeaCase,
+    IdeaMatchingResult,
     IdeaStage,
     IdeaStatus,
     DeploymentStatus,
     DeploymentStatusUpdateRequest,
+    InitiativeCatalog,
     LoginRequest,
     MessageResponse,
     QuotaAdjustment,
@@ -47,8 +54,19 @@ from .models import (
     UpsertCompanyContextRequest,
     UserProfile,
     new_idea_id,
+    # Analytics & Metrics
+    ExecutiveDashboardMetrics,
+    IdeaDuplicationMetrics,
+    AIAdoptionMetrics,
+    ProductionMetrics,
+    InvestmentROIMetrics,
+    CollaboratorMetrics,
+    AgentContext,
+    AgentExecution,
 )
 from .store import auth_store, company_context_store, context_file_store, idea_store
+from .analytics_service import AnalyticsService
+from .agent_orchestrator import MultiAgentOrchestrator
 
 app = FastAPI(title="AI Value Hub API", version="0.1.0")
 
@@ -2778,3 +2796,143 @@ def generate_architecture_package(
         architecture_package=updated.architecture_package,
         response_composition=updated.response_composition,
     )
+
+
+# ===================== ENDPOINTS EJECUTIVOS & ANALYTICS =====================
+
+@app.get("/admin/metrics/executive-dashboard")
+def get_executive_dashboard_metrics(
+    current_user: UserProfile = Depends(get_current_user),
+) -> ExecutiveDashboardMetrics:
+    """
+    Retorna dashboard ejecutivo con métricas de valor consolidadas.
+    - % Reducción de retrabajo
+    - % Duplicados evitados
+    - % Participación de colaboradores
+    - % Adopción de IA
+    """
+    _require_admin(current_user)
+    ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    analytics = AnalyticsService(all_ideas=ideas)
+    dashboard = analytics.calculate_executive_dashboard(
+        tenant_id=current_user.tenant_id,
+        annual_ai_investment=100_000,
+        period="current"
+    )
+    return dashboard
+
+
+@app.get("/admin/metrics/duplication")
+def get_duplication_metrics(
+    current_user: UserProfile = Depends(get_current_user),
+) -> IdeaDuplicationMetrics:
+    """Retorna métricas de detección y reducción de duplicación."""
+    _require_admin(current_user)
+    ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    analytics = AnalyticsService(all_ideas=ideas)
+    return analytics.calculate_duplication_metrics()
+
+
+@app.get("/admin/metrics/ai-adoption")
+def get_ai_adoption_metrics(
+    current_user: UserProfile = Depends(get_current_user),
+) -> AIAdoptionMetrics:
+    """Retorna métricas de adopción de IA en la plataforma."""
+    _require_admin(current_user)
+    ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    analytics = AnalyticsService(all_ideas=ideas)
+    return analytics.calculate_ai_adoption_metrics()
+
+
+@app.get("/admin/metrics/production")
+def get_production_metrics(
+    current_user: UserProfile = Depends(get_current_user),
+) -> ProductionMetrics:
+    """Retorna métricas de valor en producción."""
+    _require_admin(current_user)
+    ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    analytics = AnalyticsService(all_ideas=ideas)
+    return analytics.calculate_production_metrics()
+
+
+@app.get("/admin/metrics/roi")
+def get_roi_metrics(
+    current_user: UserProfile = Depends(get_current_user),
+) -> InvestmentROIMetrics:
+    """Retorna métricas de inversión IA vs ROI."""
+    _require_admin(current_user)
+    ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    analytics = AnalyticsService(all_ideas=ideas)
+    return analytics.calculate_roi_metrics()
+
+
+@app.get("/admin/metrics/collaborators")
+def get_collaborator_metrics(
+    current_user: UserProfile = Depends(get_current_user),
+) -> list[CollaboratorMetrics]:
+    """Retorna métricas de participación de colaboradores."""
+    _require_admin(current_user)
+    ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    analytics = AnalyticsService(all_ideas=ideas)
+    return analytics.calculate_collaborator_participation()
+
+
+# ===================== ENDPOINTS AGENTIC LAYER =====================
+
+@app.post("/admin/agent-session/{idea_id}/execute")
+async def execute_agent_validation(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> dict:
+    """
+    Ejecuta validación de idea usando capa agentica no-determinista.
+    """
+    _require_admin(current_user)
+    
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No access to this idea")
+    
+    # Construir contexto empresarial (DNA)
+    company_context = AgentContext(
+        tenant_id=idea.tenant_id,
+        company_name="AI Value Hub",
+        industry="Financial Services",
+        risk_tolerance="medium",
+        strategic_priorities=[
+            "AI-First Solutions",
+            "Digital Transformation",
+            "Customer Experience",
+        ],
+        prohibited_domains=["High-Risk Geopolitical"],
+        regulatory_constraints=[
+            "GDPR Compliance",
+            "Data Residency - EU",
+            "SOC 2 Type II",
+        ],
+        available_skills=[],
+    )
+    
+    # Crear orquestador
+    orchestrator = MultiAgentOrchestrator(company_context)
+    
+    # Ejecutar validación
+    result = await orchestrator.orchestrate_validation(idea)
+    
+    return result
+
+
+@app.get("/admin/agent-session/summary")
+def get_agent_execution_summary(
+    current_user: UserProfile = Depends(get_current_user),
+) -> dict:
+    """Retorna resumen de ejecuciones recientes de agentes."""
+    _require_admin(current_user)
+    
+    return {
+        "message": "Agent execution summary",
+        "recent_executions": [],
+        "timestamp": datetime.utcnow().isoformat(),
+    }

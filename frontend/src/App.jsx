@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ExecutiveDashboard from "./pages/ExecutiveDashboard";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://aihub-api-dev.yellowwave-f693504a.eastus.azurecontainerapps.io";
 const AUTH_KEY = "aihub_demo_token";
 const LANG_KEY = "aihub_ui_lang";
 const BRAND_NAME = "AI Value Hub";
-const WELCOME_LANGUAGES = ["es", "en", "pt"];
+const WELCOME_LANGUAGES = ["en"];
 const QUOTA_INPUT_TOKENS_PER_INTERACTION = 3000;
 const QUOTA_OUTPUT_TOKENS_PER_INTERACTION = 1000;
 const QUOTA_INPUT_USD_PER_1M = 2.5;
@@ -25,7 +26,7 @@ const initialForm = {
   problem_statement: "",
   expected_value: "",
   affected_users: "",
-  source_language: "es",
+  source_language: "en",
 };
 
 const initialContextForm = {
@@ -692,8 +693,11 @@ const architectureReportText = {
       integrationPoints: "Puntos de integracion",
       risks: "Riesgos",
       suggestedServices: "Servicios sugeridos",
+      suggestedStack: "Stack sugerido para despliegue",
       deploymentPlan: "Plan de despliegue",
       deploymentDiagram: "Diagrama de despliegue",
+      deploymentFlow: "Flujo de despliegue sugerido",
+      strategicKickoff: "Abordaje estrategico para iniciar desarrollo",
     },
     labels: {
       idea: "Idea",
@@ -743,8 +747,11 @@ const architectureReportText = {
       integrationPoints: "Integration points",
       risks: "Risks",
       suggestedServices: "Suggested services",
+      suggestedStack: "Suggested deployment stack",
       deploymentPlan: "Deployment plan",
       deploymentDiagram: "Deployment diagram",
+      deploymentFlow: "Suggested deployment flow",
+      strategicKickoff: "Strategic kickoff approach",
     },
     labels: {
       idea: "Idea",
@@ -794,8 +801,11 @@ const architectureReportText = {
       integrationPoints: "Pontos de integracao",
       risks: "Riscos",
       suggestedServices: "Servicos sugeridos",
+      suggestedStack: "Stack sugerido para deploy",
       deploymentPlan: "Plano de deploy",
       deploymentDiagram: "Diagrama de deploy",
+      deploymentFlow: "Fluxo de deploy sugerido",
+      strategicKickoff: "Abordagem estrategica para iniciar desenvolvimento",
     },
     labels: {
       idea: "Ideia",
@@ -835,7 +845,7 @@ function normalizeIdeaLanguage(idea) {
 }
 
 function App() {
-  const [uiLanguage, setUiLanguage] = useState(localStorage.getItem(LANG_KEY) || "es");
+  const [uiLanguage, setUiLanguage] = useState(localStorage.getItem(LANG_KEY) || "en");
   const [loginForm, setLoginForm] = useState(initialLoginForm);
   const [token, setToken] = useState(localStorage.getItem(AUTH_KEY) || "");
   const [user, setUser] = useState(null);
@@ -843,6 +853,7 @@ function App() {
   const [showInitialWelcome, setShowInitialWelcome] = useState(true);
   const [showAdminWelcome, setShowAdminWelcome] = useState(false);
   const [welcomeLanguageIndex, setWelcomeLanguageIndex] = useState(0);
+  const [showProjectInfo, setShowProjectInfo] = useState(false);
 
   const [form, setForm] = useState(initialForm);
   const [contextForm, setContextForm] = useState(initialContextForm);
@@ -1165,6 +1176,88 @@ function App() {
   }, [uiLanguage]);
 
   useEffect(() => {
+    async function handleDemoNavigation(event) {
+      const trustedOrigins = ["http://127.0.0.1:5174", "http://localhost:5174", "null"];
+      if (!trustedOrigins.includes(event.origin)) {
+        return;
+      }
+
+      const message = event.data || {};
+      if (message.type !== "AIHUB_DEMO_NAVIGATE") {
+        return;
+      }
+
+      const payload = message.payload || {};
+
+      if (["es", "en", "pt"].includes(payload.uiLanguage)) {
+        setUiLanguage(payload.uiLanguage);
+      }
+
+      if (typeof payload.showProjectInfo === "boolean") {
+        setShowProjectInfo(payload.showProjectInfo);
+      }
+
+      if (payload.showLoginScreen === true) {
+        setShowInitialWelcome(false);
+        setShowAdminWelcome(false);
+      }
+
+      if (Array.isArray(payload.demoActions) && payload.demoActions.length > 0) {
+        for (const action of payload.demoActions) {
+          if (!action || typeof action !== "object") {
+            continue;
+          }
+
+          if (action.type === "logout") {
+            handleLogout();
+            continue;
+          }
+
+          if (action.type === "login") {
+            const username = String(action.username || "").trim();
+            const password = String(action.password || "").trim();
+            if (!username || !password) {
+              continue;
+            }
+
+            setLoggingIn(true);
+            setError("");
+            try {
+              await performLogin(username, password);
+            } catch (err) {
+              setError(err.message || t.errorUnexpected);
+            } finally {
+              setLoggingIn(false);
+            }
+          }
+        }
+      }
+
+      if (!user) {
+        return;
+      }
+
+      if (payload.view === "main" || payload.view === "myIdeas") {
+        setView(payload.view);
+      }
+
+      if (user.role === "admin") {
+        if (payload.view === "admin" || payload.view === "executiveDashboard") {
+          setView(payload.view);
+        }
+
+        if (["useCases", "tokenCost", "metrics"].includes(payload.adminTab)) {
+          setAdminTab(payload.adminTab);
+          setView("admin");
+        }
+      }
+    }
+
+    window.addEventListener("message", handleDemoNavigation);
+    return () => window.removeEventListener("message", handleDemoNavigation);
+  }, [user]);
+
+  useEffect(() => {
     if (!(showInitialWelcome || showAdminWelcome)) {
       return;
     }
@@ -1191,28 +1284,34 @@ function App() {
     setLoginForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  async function performLogin(username, password) {
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!response.ok) {
+      const body = await response.json();
+      throw new Error(body.detail || t.errorLogin);
+    }
+
+    const session = await response.json();
+    localStorage.setItem(AUTH_KEY, session.access_token);
+    setToken(session.access_token);
+    setShowInitialWelcome(false);
+    setShowAdminWelcome(false);
+    setLoginForm(initialLoginForm);
+    return session;
+  }
+
   async function handleLoginSubmit(event) {
     event.preventDefault();
     setLoggingIn(true);
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginForm),
-      });
-
-      if (!response.ok) {
-        const body = await response.json();
-        throw new Error(body.detail || t.errorLogin);
-      }
-
-      const session = await response.json();
-      localStorage.setItem(AUTH_KEY, session.access_token);
-      setToken(session.access_token);
-      setShowInitialWelcome(false);
-      setLoginForm(initialLoginForm);
+      await performLogin(loginForm.username, loginForm.password);
     } catch (err) {
       setError(err.message || t.errorUnexpected);
     } finally {
@@ -1652,6 +1751,61 @@ function App() {
     `;
   }
 
+  function buildStrategicKickoffPlan(idea, lang) {
+    const technical = idea?.technical_validation || {};
+    const packageData = idea?.architecture_package || {};
+    const hasIntegrations = (packageData.integration_points || []).length > 0;
+    const highSecurityRisk = (technical.security_risk || 0) >= 50;
+    const lowDataReadiness = (technical.data_readiness || 100) < 55;
+
+    const planByLang = {
+      es: [
+        "Sprint 0: definir alcance MVP, criterios de exito y matriz de responsables entre negocio, arquitectura y seguridad.",
+        "Fundacion tecnica: provisionar entorno base, repositorio, CI/CD, observabilidad y gestion de secretos antes del primer release.",
+        hasIntegrations
+          ? "Integraciones criticas: priorizar conectores y contratos de API para reducir riesgo de dependencias tempranas."
+          : "Integraciones: validar contratos de API principales y establecer mocks para acelerar el primer incremento.",
+        lowDataReadiness
+          ? "Datos: ejecutar un frente inicial de calidad y disponibilidad de datos para evitar bloqueos en pruebas funcionales."
+          : "Datos: confirmar fuentes, periodicidad y reglas de calidad para sostener una validacion estable.",
+        highSecurityRisk
+          ? "Seguridad desde el inicio: aplicar hardening, identidad (Entra/RBAC), cifrado y revisiones de amenazas desde Sprint 1."
+          : "Seguridad operativa: incluir controles de identidad, secretos y telemetria desde el primer entorno.",
+        "Primer valor en produccion: entregar un vertical slice end-to-end y medir adopcion, tiempos de ciclo y retrabajo para iterar.",
+      ],
+      en: [
+        "Sprint 0: align MVP scope, success criteria, and ownership across business, architecture, and security.",
+        "Technical foundation: establish baseline environment, repository, CI/CD, observability, and secrets management before first release.",
+        hasIntegrations
+          ? "Critical integrations: prioritize connectors and API contracts early to reduce dependency risk."
+          : "Integrations: validate core API contracts and use mocks to accelerate the first increment.",
+        lowDataReadiness
+          ? "Data readiness: run an early workstream for data quality and availability to avoid test-phase blockers."
+          : "Data readiness: confirm data sources, refresh cadence, and quality rules for stable validation.",
+        highSecurityRisk
+          ? "Security by design: apply hardening, identity controls (Entra/RBAC), encryption, and threat review from Sprint 1."
+          : "Operational security: include identity, secrets, and telemetry controls from the first environment.",
+        "First production value: deliver one end-to-end vertical slice and measure adoption, cycle time, and rework to guide iteration.",
+      ],
+      pt: [
+        "Sprint 0: alinhar escopo MVP, criterios de sucesso e responsabilidades entre negocio, arquitetura e seguranca.",
+        "Fundacao tecnica: preparar ambiente base, repositorio, CI/CD, observabilidade e gestao de segredos antes do primeiro release.",
+        hasIntegrations
+          ? "Integracoes criticas: priorizar conectores e contratos de API cedo para reduzir risco de dependencias."
+          : "Integracoes: validar contratos principais de API e usar mocks para acelerar o primeiro incremento.",
+        lowDataReadiness
+          ? "Dados: executar uma frente inicial de qualidade e disponibilidade para evitar bloqueios na fase de testes."
+          : "Dados: confirmar fontes, frequencia de atualizacao e regras de qualidade para validacao estavel.",
+        highSecurityRisk
+          ? "Seguranca desde o inicio: aplicar hardening, identidade (Entra/RBAC), criptografia e revisao de ameacas desde Sprint 1."
+          : "Seguranca operacional: incluir controles de identidade, segredos e telemetria desde o primeiro ambiente.",
+        "Primeiro valor em producao: entregar um vertical slice end-to-end e medir adocao, ciclo e retrabalho para iterar.",
+      ],
+    };
+
+    return planByLang[lang] || planByLang.es;
+  }
+
   function buildArchitecturePackageHtml(idea) {
     const lang = idea?.response_language || uiLanguage;
     const rt = architectureReportText[lang] || architectureReportText.es;
@@ -1690,6 +1844,7 @@ function App() {
 
     const nextActions = (response.next_actions || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
     const suggestedServices = buildServiceSuggestions(idea).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+    const strategicKickoffPlan = buildStrategicKickoffPlan(idea, lang).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
     const monthlyConsumptionAssumptions = (consumption?.assumptions || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 
     const strategicPriorities = (context.strategic_priorities || [])
@@ -1836,14 +1991,17 @@ function App() {
     </section>
 
     <section class="panel" data-panel="servicios">
-      <h2>${escapeHtml(rt.headings.suggestedServices)}</h2>
+      <h2>${escapeHtml(rt.headings.suggestedStack)}</h2>
       <ul>${suggestedServices || `<li>${escapeHtml(labels.noData)}</li>`}</ul>
       <h2 style="margin-top:12px;">${escapeHtml(rt.headings.deploymentPlan)}</h2>
       <ul>${deploymentSteps || `<li>${escapeHtml(labels.noData)}</li>`}</ul>
+      <h2 style="margin-top:12px;">${escapeHtml(rt.headings.strategicKickoff)}</h2>
+      <ul>${strategicKickoffPlan || `<li>${escapeHtml(labels.noData)}</li>`}</ul>
     </section>
 
     <section class="panel" data-panel="despliegue">
-      <h2>${escapeHtml(rt.headings.deploymentDiagram)}</h2>
+      <h2>${escapeHtml(rt.headings.deploymentFlow)}</h2>
+      <p class="meta">${escapeHtml(rt.headings.deploymentDiagram)}: ${escapeHtml(packageData.solution_name || idea.title || labels.noData)}</p>
       ${diagram}
     </section>
   </div>
@@ -2378,9 +2536,6 @@ function App() {
           <div className="top-actions">
             <div>
               <p className="eyebrow">{BRAND_NAME}</p>
-              <p className="meta">
-                {t.session}: {user.display_name} ({user.username})
-              </p>
             </div>
             <div className="action-row">
               <label>
@@ -2391,8 +2546,12 @@ function App() {
                   <option value="pt">PT</option>
                 </select>
               </label>
+              <button type="button" onClick={() => setShowProjectInfo(!showProjectInfo)} title="Toggle project info" style={{fontSize: "0.8rem", padding: "8px 10px"}}>ℹ️ Info</button>
               {user.role === "admin" && (
-                <button type="button" onClick={() => setView("admin")}>{t.adminPanelTitle}</button>
+                <>
+                  <button type="button" onClick={() => setView("executiveDashboard")}>📊 Dashboard</button>
+                  <button type="button" onClick={() => setView("admin")}>{t.adminPanelTitle}</button>
+                </>
               )}
               <button type="button" onClick={() => setView("main")}>{t.home}</button>
               {user.role !== "admin" && (
@@ -2401,46 +2560,54 @@ function App() {
               <button type="button" onClick={handleLogout}>{t.logout}</button>
             </div>
           </div>
-          <h1>{t.heroTitle}</h1>
-          <p className="hero-copy">{t.heroCopy}</p>
-          <div className="tag-row">
-            <span className="tag">{t.tenant}: {user.tenant_id}</span>
-            <span className="tag">{t.authReady}</span>
-            <span className="tag">{t.stages}</span>
-            <span className="tag">API: {API_URL}</span>
-          </div>
+          {showProjectInfo && (
+            <>
+              <h1>{t.heroTitle}</h1>
+              <p className="hero-copy">{t.heroCopy}</p>
+              <div className="tag-row">
+                <span className="tag">{t.tenant}: {user.tenant_id}</span>
+                <span className="tag">{t.authReady}</span>
+                <span className="tag">{t.stages}</span>
+                <span className="tag">API: {API_URL}</span>
+              </div>
+            </>
+          )}
         </header>
 
-        <section className="kpis" aria-label="Resumen personal">
-          <article className="kpi-card">
-            <p className="kpi-label">{t.myIdeas}</p>
-            <p className="kpi-value">{summary.totalIdeas}</p>
-          </article>
-          <article className="kpi-card">
-            <p className="kpi-label">{t.viable}</p>
-            <p className="kpi-value">{summary.viableIdeas}</p>
-          </article>
-          <article className="kpi-card">
-            <p className="kpi-label">{t.rejected}</p>
-            <p className="kpi-value">{summary.rejectedIdeas}</p>
-          </article>
-          <article className="kpi-card">
-            <p className="kpi-label">{t.clarification}</p>
-            <p className="kpi-value">{summary.needsClarification}</p>
-          </article>
-        </section>
+        {user.role !== "admin" && (
+          <section className="kpis" aria-label={t.myIdeas}>
+            <article className="kpi-card">
+              <p className="kpi-label">{t.myIdeas}</p>
+              <p className="kpi-value">{summary.totalIdeas}</p>
+            </article>
+            <article className="kpi-card">
+              <p className="kpi-label">{t.viable}</p>
+              <p className="kpi-value">{summary.viableIdeas}</p>
+            </article>
+            <article className="kpi-card">
+              <p className="kpi-label">{t.rejected}</p>
+              <p className="kpi-value">{summary.rejectedIdeas}</p>
+            </article>
+            <article className="kpi-card">
+              <p className="kpi-label">{t.clarification}</p>
+              <p className="kpi-value">{summary.needsClarification}</p>
+            </article>
+          </section>
+        )}
 
         {view === "admin" && user.role === "admin" ? (
           <main className="grid grid-single">
             <section className="card card-list admin-panel">
-              <div className="card-header">
-                <h2>{t.adminPanelTitle}</h2>
-                <p>{t.adminPanelSubtitle}</p>
-              </div>
-              <div className="admin-tabs" role="tablist" aria-label={t.adminPanelTitle}>
-                <button type="button" className={adminTab === "useCases" ? "admin-tab active" : "admin-tab"} onClick={() => setAdminTab("useCases")}>{t.adminTabUseCases}</button>
-                <button type="button" className={adminTab === "tokenCost" ? "admin-tab active" : "admin-tab"} onClick={() => setAdminTab("tokenCost")}>{t.adminTabTokenCost}</button>
-                <button type="button" className={adminTab === "metrics" ? "admin-tab active" : "admin-tab"} onClick={() => setAdminTab("metrics")}>{t.adminTabMetrics}</button>
+              <div className="admin-header-row">
+                <div className="card-header">
+                  <h2>{t.adminPanelTitle}</h2>
+                  <p>{t.adminPanelSubtitle}</p>
+                </div>
+                <div className="admin-tabs" role="tablist" aria-label={t.adminPanelTitle}>
+                  <button type="button" className={adminTab === "useCases" ? "admin-tab active" : "admin-tab"} onClick={() => setAdminTab("useCases")}>{t.adminTabUseCases}</button>
+                  <button type="button" className={adminTab === "tokenCost" ? "admin-tab active" : "admin-tab"} onClick={() => setAdminTab("tokenCost")}>{t.adminTabTokenCost}</button>
+                  <button type="button" className={adminTab === "metrics" ? "admin-tab active" : "admin-tab"} onClick={() => setAdminTab("metrics")}>{t.adminTabMetrics}</button>
+                </div>
               </div>
 
               {adminTab === "useCases" && (
@@ -2628,6 +2795,10 @@ function App() {
                 </div>
               )}
             </section>
+          </main>
+        ) : view === "executiveDashboard" && user.role === "admin" ? (
+          <main className="grid grid-single">
+            <ExecutiveDashboard lang={uiLanguage} />
           </main>
         ) : view === "main" ? (
           <main className="grid">

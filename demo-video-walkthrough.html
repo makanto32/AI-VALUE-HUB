@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Value Hub - Live UI Walkthrough</title>
+<style>
+:root {
+  --bg: #0b1220;
+  --panel: #111a2b;
+  --panel-2: #16233a;
+  --line: #2a3a59;
+  --text: #e8eefb;
+  --muted: #9fb0cf;
+  --blue: #4e8cff;
+  --green: #27c59a;
+  --amber: #efb24b;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: radial-gradient(1200px 700px at 20% -10%, #1a2b4a, transparent), var(--bg);
+  color: var(--text);
+  font-family: Segoe UI, Arial, sans-serif;
+}
+.shell {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+.topbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 14, 26, 0.95);
+}
+.brand {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.brand span { color: var(--blue); }
+.chapters {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+}
+.chap {
+  height: 6px;
+  border-radius: 999px;
+  background: #2b3a57;
+  flex: 1;
+  cursor: pointer;
+}
+.chap.active { background: var(--blue); }
+.chap.done { background: var(--green); }
+.timer {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.main {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr var(--side-width, 360px);
+}
+.shell.focus-live .main {
+  grid-template-columns: 1fr;
+}
+.stage {
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  position: relative;
+}
+.shell.focus-live .stage {
+  border-right: 0;
+}
+.stage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(17, 26, 43, 0.8);
+  border-bottom: 1px solid var(--line);
+}
+.stage-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+.live-controls {
+  display: flex;
+  gap: 8px;
+}
+.btn {
+  border: 1px solid var(--line);
+  background: #1a2944;
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn:hover { border-color: #4e8cff; }
+.btn.primary {
+  background: linear-gradient(90deg, #3b6ff0, #7a5ce0);
+  border-color: transparent;
+}
+.frame-wrap {
+  min-height: 0;
+  background: #0a1020;
+  overflow: auto;
+}
+iframe {
+  width: calc(100% / var(--frame-scale, 1));
+  height: calc(100% / var(--frame-scale, 1));
+  border: 0;
+  background: #ffffff;
+  display: block;
+  transform: scale(var(--frame-scale, 1));
+  transform-origin: top left;
+}
+.side {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  background: rgba(10, 16, 31, 0.95);
+}
+.shell.focus-live .side {
+  display: none;
+}
+.side-head {
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.side-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.side-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.value-box {
+  margin: 12px 14px 0;
+  border: 1px solid #2e4468;
+  border-radius: 10px;
+  background: #13213a;
+  padding: 10px;
+  font-size: 12px;
+}
+.value-box h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #b6d0ff;
+}
+.value-list {
+  margin: 0;
+  padding-left: 16px;
+  color: #d9e5fb;
+  line-height: 1.5;
+}
+.narr {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  color: #dbe5f9;
+  line-height: 1.6;
+  font-size: 13px;
+}
+.narr p { margin: 0 0 10px; }
+.narr .tip {
+  background: rgba(39, 197, 154, 0.12);
+  border-left: 3px solid var(--green);
+  padding: 8px 10px;
+  border-radius: 0 8px 8px 0;
+  margin: 10px 0;
+}
+.narr .warn {
+  background: rgba(239, 178, 75, 0.1);
+  border-left: 3px solid var(--amber);
+  padding: 8px 10px;
+  border-radius: 0 8px 8px 0;
+  margin: 10px 0;
+}
+.bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  background: rgba(8, 14, 26, 0.95);
+}
+.counter {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+.fit-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.fit-select {
+  border: 1px solid var(--line);
+  background: #1a2944;
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.session-transition {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 11, 20, 0.74);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+.session-transition.show {
+  display: flex;
+  animation: transitionFade 1.9s ease forwards;
+}
+.session-transition-card {
+  min-width: 320px;
+  max-width: 560px;
+  border: 1px solid #3a5687;
+  background: linear-gradient(160deg, rgba(17, 32, 58, 0.95), rgba(24, 44, 77, 0.9));
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 24px 50px rgba(5, 8, 16, 0.45);
+}
+.session-transition-kicker {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ec0ff;
+  margin-bottom: 8px;
+}
+.session-transition-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.session-transition-sub {
+  color: #cfe0ff;
+  font-size: 13px;
+}
+@keyframes transitionFade {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (max-width: 1100px) {
+  .main { grid-template-columns: 1fr; }
+  .side { border-top: 1px solid var(--line); }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="brand"><span>AI</span> Value Hub - Live UI Walkthrough</div>
+    <div class="chapters" id="chapters"></div>
+    <div class="timer" id="timer">Play to start</div>
+  </div>
+
+  <div class="main">
+    <div class="stage">
+      <div class="stage-head">
+        <div class="stage-title" id="sceneTitle">Loading...</div>
+        <div class="live-controls">
+          <button class="btn" id="btnOpenApp">Open Live App</button>
+          <button class="btn" id="btnReloadApp">Reload App</button>
+          <button class="btn" id="btnSyncStep">Sync Step</button>
+          <button class="btn" id="btnFocusLive">Focus Live</button>
+        </div>
+      </div>
+      <div class="frame-wrap">
+        <iframe id="appFrame" src="http://127.0.0.1:5174"></iframe>
+      </div>
+      <div class="session-transition" id="sessionTransition" aria-live="polite">
+        <div class="session-transition-card">
+          <div class="session-transition-kicker">Live session handoff</div>
+          <div class="session-transition-title" id="sessionTransitionTitle">Switching session</div>
+          <div class="session-transition-sub" id="sessionTransitionSub">Applying credentials and loading the next workspace view.</div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="side-head">
+        <h2 id="sideHeading">Live UI Demo</h2>
+        <p>This walkthrough uses the real application interface, not a mockup.</p>
+      </div>
+      <div class="value-box" id="valueBox"></div>
+      <div class="narr" id="narration"></div>
+    </aside>
+  </div>
+
+  <div class="bottom">
+    <button class="btn" id="btnPrev">Previous</button>
+    <button class="btn primary" id="btnPlay">Pause</button>
+    <button class="btn" id="btnNext">Next</button>
+    <button class="btn" id="btnRestart">Restart</button>
+    <button class="btn" id="btnAudio">Audio off</button>
+    <label class="fit-label" for="fitScale">Fit</label>
+    <select class="fit-select" id="fitScale" aria-label="Fit scale">
+      <option value="1">100%</option>
+      <option value="0.95">95%</option>
+      <option value="0.9">90%</option>
+      <option value="0.85" selected>85%</option>
+      <option value="0.8">80%</option>
+    </select>
+    <div class="counter" id="counter">Step 1 / 8</div>
+  </div>
+</div>
+
+<script>
+const LIVE_URL = "http://127.0.0.1:5174";
+
+const STEPS = [
+  {
+    title: "User session - Login",
+    duration: 22,
+    heading: "Start in real user interface",
+    valueTitle: "What to show",
+    valueItems: [
+      "UI language set to EN",
+      "User account login",
+      "Same interface users work with"
+    ],
+    text: [
+      "Open the live app and sign in with a user account.",
+      "This confirms we are demoing the real product workflow, not a simulated screen.",
+      "Use this moment to highlight readiness for Entra ID integration."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      showLoginScreen: true,
+      view: "main",
+      demoActions: [
+        { type: "logout" },
+        { type: "login", username: "analista.finanzas", password: "Demo1234!" }
+      ]
+    },
+    audio: "Hello, and welcome. In this demo, our purpose is to show how AI Value Hub turns scattered ideas into operational decisions. We begin in the real interface and sign in as an end user, because value starts at capture: the same screen teams use every day, with governance-ready data from the first interaction."
+  },
+  {
+    title: "User session - Home and intake",
+    duration: 18,
+    heading: "Show how ideas are captured",
+    valueTitle: "Value captured",
+    valueItems: [
+      "Structured intake fields",
+      "Business context baseline",
+      "Consistent data for evaluation"
+    ],
+    text: [
+      "Navigate to Home and show the idea intake form.",
+      "Explain that each idea captures title, problem statement, expected value, and affected users.",
+      "This structure improves comparability and downstream governance."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      view: "main"
+    },
+    audio: "Step two. Here the platform captures the business signal, not just a request. Problem context, expected value, affected users, and language are structured from the start, so ideas become comparable, searchable, and operationally actionable."
+  },
+  {
+    title: "User session - Validation flow",
+    duration: 24,
+    heading: "User value: faster qualification",
+    valueTitle: "Why it matters",
+    valueItems: [
+      "AI assisted qualification",
+      "Reduced manual rework",
+      "Faster decision cycle",
+      "Architecture package for valid state ideas"
+    ],
+    text: [
+      "Walk through idea validation and how the agent assists qualification.",
+      "Position this as a productivity accelerator for analysts.",
+      "Emphasize that this reduces repetitive manual triage.",
+      "For ideas in valid state, the platform generates an architecture package with a diagram, suggested Azure service stack, and a baseline implementation approach to start development."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      view: "main"
+    },
+    audio: "Step three. During validation, the system transforms raw input into decision-grade information. It highlights assumptions, risk signals, and technical readiness so analysts spend less time on manual triage and more time on quality decisions. And when an idea reaches valid state, AI Value Hub generates an architecture package: a reference diagram, a suggested Azure services stack for deployment, and a baseline development approach to help teams start implementation faster."
+  },
+  {
+    title: "Admin session - Dashboard tab",
+    duration: 22,
+    heading: "Executive value from captured data",
+    valueTitle: "Dashboard metrics (live)",
+    valueItems: [
+      "Rework Reduction: 70.2%",
+      "Duplicates Avoided: 59.5%",
+      "AI Adoption: 21.4%",
+      "Total Ideas: 42",
+      "Avoided Cost: $50K",
+      "ROI: 385%"
+    ],
+    text: [
+      "Switch to admin and open Dashboard.",
+      "Explain that this tab converts captured operational data into executive outcomes.",
+      "Use these values as the evidence story: less rework, fewer duplicates, and strong ROI."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      view: "executiveDashboard",
+      demoActions: [
+        { type: "logout" },
+        { type: "login", username: "admin.valuehub", password: "Demo1234!" }
+      ]
+    },
+    audio: "Step four. Now we switch to the admin perspective. The dashboard is where captured operational data becomes leadership insight. The percentages shown here are demo indicators, but the real value is the data model behind them: traceable quality, throughput, and decision impact across the portfolio."
+  },
+  {
+    title: "Admin session - Use cases tab",
+    duration: 18,
+    heading: "Portfolio governance",
+    valueTitle: "Use cases tab",
+    valueItems: [
+      "Approved use case inventory",
+      "Feasibility and estimated cost",
+      "Deployment status controls"
+    ],
+    text: [
+      "Open MVP3 admin panel, then Use cases.",
+      "Show how each case includes feasibility, estimated token cost, and deployment status.",
+      "This is the operating view for portfolio prioritization."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      view: "admin",
+      adminTab: "useCases"
+    },
+    audio: "Step five. In Use cases, governance becomes practical. Each initiative is represented with feasibility, ownership, lifecycle status, and estimated effort, creating a shared operational language between business, architecture, and delivery teams."
+  },
+  {
+    title: "Admin session - Tokens and cost tab",
+    duration: 22,
+    heading: "FinOps visibility",
+    valueTitle: "Tokens and cost (live)",
+    valueItems: [
+      "Projects in production: 1",
+      "Monthly total quota: 4,500,000 tokens",
+      "Quota month estimated cost: $0.0226",
+      "Case example estimated cost: $0.0057"
+    ],
+    text: [
+      "Open Tokens and cost tab.",
+      "Show quota, monthly consumption, and cost traceability.",
+      "Position this as concrete AI spend governance with per-case controls."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      view: "admin",
+      adminTab: "tokenCost"
+    },
+    audio: "Step six. Tokens and cost provides FinOps clarity. Beyond absolute numbers, what matters is traceability: quota policy, consumption behavior, and cost accountability per use case, so growth can happen with control."
+  },
+  {
+    title: "Admin session - Metrics tab",
+    duration: 20,
+    heading: "Operational quality",
+    valueTitle: "Metrics tab (live)",
+    valueItems: [
+      "Total ideas: 42",
+      "Approval rate: 21.4%",
+      "Technical pass rate: 64.3%",
+      "Average feasibility: 91",
+      "Average cycle: 933.4 hours"
+    ],
+    text: [
+      "Open Metrics tab.",
+      "Show approval rate, technical pass rate, cycle time, and top components.",
+      "Explain this is the quality and throughput lens for platform operations."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      view: "admin",
+      adminTab: "metrics"
+    },
+    audio: "Step seven. Metrics is the operating lens. It shows flow quality over time, from approval patterns to technical pass rates and cycle performance, helping teams identify bottlenecks and continuously improve execution."
+  },
+  {
+    title: "Close - User plus admin in one product",
+    duration: 22,
+    heading: "Unified story",
+    valueTitle: "Final message",
+    valueItems: [
+      "User flow for capture and validation",
+      "Admin flow for governance and control",
+      "One real interface, one data spine"
+    ],
+    text: [
+      "Close by summarizing both perspectives in the same interface.",
+      "Users generate high quality inputs. Admins convert them into decisions and control.",
+      "Everything shown comes from the live UI and captured platform data."
+    ],
+    appState: {
+      uiLanguage: "en",
+      showProjectInfo: true,
+      view: "executiveDashboard"
+    },
+    audio: "Final step. AI Value Hub connects capture, validation, and governance in one operational spine. Users contribute structured intelligence, leaders get reliable decision context, and delivery teams receive a practical starting point for execution. Thank you for your time, and we hope this demo made clear how the platform converts captured information into operational momentum."
+  }
+];
+
+let current = 0;
+let playing = true;
+let elapsed = 0;
+let tick = null;
+let audioEnabled = false;
+let focusLive = false;
+const executedStepActions = new Set();
+let selectedVoice = null;
+let transitionTimeout = null;
+
+function applyFrameScale(scaleValue) {
+  const scale = Number(scaleValue);
+  const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+  document.documentElement.style.setProperty("--frame-scale", String(safeScale));
+}
+
+function syncStepToLiveApp(forceActions = false) {
+  const frame = document.getElementById("appFrame");
+  const step = STEPS[current];
+  if (!frame || !frame.contentWindow || !step?.appState) {
+    return;
+  }
+
+  const payload = { ...step.appState };
+  if (Array.isArray(step.appState.demoActions)) {
+    const actionKey = "step-action-" + current;
+    const canRunActions = forceActions || !executedStepActions.has(actionKey);
+    if (canRunActions) {
+      payload.demoActions = step.appState.demoActions;
+      executedStepActions.add(actionKey);
+    } else {
+      delete payload.demoActions;
+    }
+  }
+
+  frame.contentWindow.postMessage(
+    {
+      type: "AIHUB_DEMO_NAVIGATE",
+      payload,
+    },
+    "*",
+  );
+
+  if (Array.isArray(payload.demoActions) && payload.demoActions.length > 0) {
+    const followUpPayload = { ...step.appState };
+    delete followUpPayload.demoActions;
+    const followUpDelays = [1400, 2800];
+    followUpDelays.forEach((delayMs) => setTimeout(() => {
+      if (!frame.contentWindow) {
+        return;
+      }
+      frame.contentWindow.postMessage(
+        {
+          type: "AIHUB_DEMO_NAVIGATE",
+          payload: followUpPayload,
+        },
+        "*",
+      );
+    }, delayMs));
+  }
+}
+
+function pickNarratorVoice() {
+  if (!window.speechSynthesis) {
+    return null;
+  }
+
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices || voices.length === 0) {
+    return null;
+  }
+
+  const femaleHints = ["female", "woman", "samantha", "aria", "zira", "jenny", "libby", "eva", "sonia", "susan", "michelle", "katja"];
+  const englishVoices = voices.filter((voice) => (voice.lang || "").toLowerCase().startsWith("en"));
+  const pool = englishVoices.length > 0 ? englishVoices : voices;
+
+  const preferred = pool.find((voice) => {
+    const label = `${voice.name} ${voice.voiceURI}`.toLowerCase();
+    return femaleHints.some((hint) => label.includes(hint));
+  });
+
+  return preferred || pool[0] || null;
+}
+
+function showSessionTransition(title, subtitle, durationMs = 2100) {
+  const overlay = document.getElementById("sessionTransition");
+  if (!overlay) {
+    return;
+  }
+
+  document.getElementById("sessionTransitionTitle").textContent = title;
+  document.getElementById("sessionTransitionSub").textContent = subtitle;
+
+  overlay.classList.remove("show");
+  void overlay.offsetWidth;
+  overlay.classList.add("show");
+
+  if (transitionTimeout) {
+    clearTimeout(transitionTimeout);
+  }
+  transitionTimeout = setTimeout(() => {
+    overlay.classList.remove("show");
+  }, durationMs);
+}
+
+function renderChapters() {
+  const wrap = document.getElementById("chapters");
+  wrap.innerHTML = "";
+  STEPS.forEach((_, idx) => {
+    const n = document.createElement("div");
+    const cls = idx < current ? "chap done" : idx === current ? "chap active" : "chap";
+    n.className = cls;
+    n.title = STEPS[idx].title;
+    n.onclick = () => goTo(idx);
+    wrap.appendChild(n);
+  });
+}
+
+function renderStep() {
+  const s = STEPS[current];
+  document.getElementById("sceneTitle").textContent = s.title;
+  document.getElementById("sideHeading").textContent = s.heading;
+
+  const valueBox = document.getElementById("valueBox");
+  valueBox.innerHTML = "<h3>" + s.valueTitle + "</h3><ul class='value-list'>" + s.valueItems.map(i => "<li>" + i + "</li>").join("") + "</ul>";
+
+  const narr = document.getElementById("narration");
+  narr.innerHTML = s.text.map(t => "<p>" + t + "</p>").join("") +
+    "<div class='tip'>Live UI note: this walkthrough is connected to the actual app at " + LIVE_URL + ".</div>";
+
+  document.getElementById("counter").textContent = "Step " + (current + 1) + " / " + STEPS.length;
+  renderChapters();
+  updateTimer();
+  syncStepToLiveApp();
+}
+
+function updateTimer() {
+  const s = STEPS[current];
+  const mm = Math.floor(elapsed / 60);
+  const ss = String(elapsed % 60).padStart(2, "0");
+  const total = "0:" + String(s.duration).padStart(2, "0");
+  document.getElementById("timer").textContent = (playing ? "|| " : "> ") + mm + ":" + ss + " / " + total;
+}
+
+function stopSpeech() {
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+}
+
+function speakStep() {
+  if (!audioEnabled || !window.speechSynthesis) return;
+  stopSpeech();
+  selectedVoice = selectedVoice || pickNarratorVoice();
+  const u = new SpeechSynthesisUtterance(STEPS[current].audio);
+  u.lang = "en-US";
+  if (selectedVoice) {
+    u.voice = selectedVoice;
+    u.lang = selectedVoice.lang || "en-US";
+  }
+  u.rate = 0.98 + (current % 3) * 0.05;
+  u.pitch = 1.12 + (current % 2) * 0.08;
+  window.speechSynthesis.speak(u);
+}
+
+function resetTick() {
+  if (tick) clearInterval(tick);
+  if (!playing) return;
+  tick = setInterval(() => {
+    elapsed += 1;
+    updateTimer();
+    if (elapsed >= STEPS[current].duration) {
+      if (current < STEPS.length - 1) {
+        goTo(current + 1);
+      } else {
+        playing = false;
+        document.getElementById("btnPlay").textContent = "Play";
+        if (tick) clearInterval(tick);
+      }
+    }
+  }, 1000);
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= STEPS.length) return;
+  const previous = current;
+  current = idx;
+  elapsed = 0;
+  renderStep();
+  if (previous === 2 && idx === 3) {
+    showSessionTransition(
+      "Switching to Admin Session",
+      "Closing user context, signing in as admin, and loading dashboard insights.",
+      2200,
+    );
+  }
+  resetTick();
+  speakStep();
+}
+
+document.getElementById("btnPrev").onclick = () => goTo(current - 1);
+document.getElementById("btnNext").onclick = () => goTo(current + 1);
+document.getElementById("btnRestart").onclick = () => {
+  executedStepActions.clear();
+  playing = true;
+  document.getElementById("btnPlay").textContent = "Pause";
+  goTo(0);
+};
+document.getElementById("btnPlay").onclick = () => {
+  playing = !playing;
+  document.getElementById("btnPlay").textContent = playing ? "Pause" : "Play";
+  if (playing) {
+    resetTick();
+    speakStep();
+  } else {
+    if (tick) clearInterval(tick);
+    stopSpeech();
+  }
+};
+document.getElementById("btnAudio").onclick = () => {
+  audioEnabled = !audioEnabled;
+  document.getElementById("btnAudio").textContent = audioEnabled ? "Audio on" : "Audio off";
+  if (audioEnabled) speakStep(); else stopSpeech();
+};
+document.getElementById("btnOpenApp").onclick = () => window.open(LIVE_URL, "_blank");
+document.getElementById("btnReloadApp").onclick = () => {
+  const frame = document.getElementById("appFrame");
+  frame.src = LIVE_URL;
+  setTimeout(() => syncStepToLiveApp(true), 700);
+};
+document.getElementById("btnSyncStep").onclick = () => syncStepToLiveApp(true);
+document.getElementById("btnFocusLive").onclick = () => {
+  focusLive = !focusLive;
+  document.querySelector(".shell").classList.toggle("focus-live", focusLive);
+  document.getElementById("btnFocusLive").textContent = focusLive ? "Show Guide" : "Focus Live";
+};
+
+document.getElementById("fitScale").onchange = (event) => {
+  applyFrameScale(event.target.value);
+};
+
+document.getElementById("appFrame").addEventListener("load", () => {
+  setTimeout(() => syncStepToLiveApp(true), 350);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowRight") goTo(current + 1);
+  if (e.key === "ArrowLeft") goTo(current - 1);
+  if (e.key.toLowerCase() === "p") document.getElementById("btnPlay").click();
+});
+
+goTo(0);
+applyFrameScale(document.getElementById("fitScale").value);
+
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    selectedVoice = pickNarratorVoice();
+  };
+}
+</script>
+</body>
+</html>
