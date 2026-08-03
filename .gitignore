@@ -16,3 +16,6 @@ coverage/
 *.swp
 *.swo
 .DS_Store
+*.db-shm
+*.db-wal
+data/fabric/

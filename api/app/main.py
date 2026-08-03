@@ -67,8 +67,11 @@ from .models import (
 from .store import auth_store, company_context_store, context_file_store, idea_store
 from .analytics_service import AnalyticsService
 from .agent_orchestrator import MultiAgentOrchestrator
+from .metrics_provider import build_dashboard_metrics_provider
+from .fabric_medallion import run_medallion_pipeline
 
 app = FastAPI(title="AI Value Hub API", version="0.1.0")
+DASHBOARD_METRICS_PROVIDER = build_dashboard_metrics_provider()
 
 CANONICAL_LANGUAGE = "es"
 SUPPORTED_LANGUAGES = ["es", "en", "pt"]
@@ -2802,6 +2805,7 @@ def generate_architecture_package(
 
 @app.get("/admin/metrics/executive-dashboard")
 def get_executive_dashboard_metrics(
+    period: str = "current",
     current_user: UserProfile = Depends(get_current_user),
 ) -> ExecutiveDashboardMetrics:
     """
@@ -2812,14 +2816,20 @@ def get_executive_dashboard_metrics(
     - % Adopción de IA
     """
     _require_admin(current_user)
-    ideas = idea_store.list_by_tenant(current_user.tenant_id)
-    analytics = AnalyticsService(all_ideas=ideas)
-    dashboard = analytics.calculate_executive_dashboard(
+    return DASHBOARD_METRICS_PROVIDER.get_executive_dashboard(
         tenant_id=current_user.tenant_id,
-        annual_ai_investment=100_000,
-        period="current"
+        period=period,
     )
-    return dashboard
+
+
+@app.post("/admin/metrics/semantic/refresh", response_model=MessageResponse)
+def refresh_semantic_metrics(
+    current_user: UserProfile = Depends(get_current_user),
+) -> MessageResponse:
+    """Builds bronze/silver/gold artifacts from transactional DB records."""
+    _require_admin(current_user)
+    run_medallion_pipeline()
+    return MessageResponse(message="Pipeline medallion actualizado")
 
 
 @app.get("/admin/metrics/duplication")
