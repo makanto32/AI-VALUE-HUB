@@ -10,7 +10,15 @@ Accede directamente a las vistas visuales del proyecto en GitHub Pages:
 - **💡 [AI Value Hub Demo](https://makanto32.github.io/AI-Opportunity-Hub/ai-value-hub-demo.html)** - Flujo visual del demo
 - **🏗️ [Arquitectura (EN)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.html)** - Diagrama técnico completo
 - **🏗️ [Arquitectura (ES)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.es.html)** - Versión en español
+- **📈 [Arquitectura Fabric + Dashboard](https://makanto32.github.io/AI-Opportunity-Hub/architecture-fabric-live.html)** - Integración live de Microsoft Fabric para métricas ejecutivas
 - **📖 [Use Case Factory](https://makanto32.github.io/AI-Opportunity-Hub/AI_Use_Case_Factory_Company_Context_Engine_EN.html)** - Documento de referencia ejecutivo
+
+## Integracion Microsoft Fabric
+- Provider semantico habilitado para dashboard ejecutivo via Power BI / Fabric.
+- Scripts de soporte:
+	- `scripts/fabric-provision-semantic.ps1`
+	- `scripts/fabric-sync-semantic.ps1`
+- Referencia de setup: `docs/FABRIC_MEDALLION_SEMANTIC_SETUP.md`
 
 ## MVP1 implementado
 - Idea intake.
