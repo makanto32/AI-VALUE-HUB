@@ -2,6 +2,10 @@
 
 Base inicial del proyecto alineada al roadmap del documento de arquitectura.
 
+## Licencia
+Este repositorio está licenciado bajo MIT.
+Consulta los términos completos en [LICENSE](LICENSE).
+
 ## 🚀 Vistas de Arquitectura (Live)
 
 Accede directamente a las vistas visuales del proyecto en GitHub Pages:
