@@ -1,6 +1,6 @@
-# AI-OPPORTUNIY-HUB
+# AI Value Hub
 
-Base inicial del proyecto alineada al roadmap del documento de arquitectura.
+Base proyecto alineada al roadmap del documento de arquitectura.
 
 ## Licencia
 Este repositorio está licenciado bajo MIT.
@@ -8,7 +8,7 @@ Consulta los términos completos en [LICENSE](LICENSE).
 
 ## 🚀 Vistas de Arquitectura (Live)
 
-Accede directamente a las vistas visuales del proyecto en GitHub Pages:
+Accede directamente a las vistas visuales del proyecto en GitHub Pages. Las siguientes vistas son solo para lectura y no requieren instalación local:
 
 - **📊 [Centro de Control](https://makanto32.github.io/AI-Opportunity-Hub/)** - Menú de navegación principal
 - **💡 [AI Value Hub Demo](https://makanto32.github.io/AI-Opportunity-Hub/ai-value-hub-demo.html)** - Flujo visual del demo
@@ -66,17 +66,20 @@ Endpoints MVP2 agregados:
 - Guía de arquitectura: [docs/CLIENT_ARCHITECTURE_REFERENCE.md](docs/CLIENT_ARCHITECTURE_REFERENCE.md)
 - Diagrama profesional en PDF: [docs/AI_Opportunity_Hub_Architecture_Reference.pdf](docs/AI_Opportunity_Hub_Architecture_Reference.pdf)
 
-## Ejecutar API
+## Ejecutar localmente (Desarrollo)
+
+### Ejecutar API
 ```bash
+cd api
 pip install -r requirements.txt
-uvicorn api.app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
-## Ejecutar Frontend
+### Ejecutar Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Para más información sobre despliegue en Azure, consulta [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md).
+Para desplegar en producción en Azure, consulta [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md).
