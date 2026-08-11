@@ -78,6 +78,3 @@ cd frontend
 npm install
 npm run dev
 ```
-
-Frontend: http://localhost:5173
-API: http://localhost:8000
