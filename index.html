@@ -78,64 +78,154 @@
         font-size: 0.8rem;
         font-weight: 700;
       }
+      .language-toggle {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(15, 28, 51, 0.95);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 12px;
+        z-index: 1000;
+      }
+      .language-toggle span {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 24px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        cursor: pointer;
+        border: 1px solid var(--line);
+        transition: background 0.3s ease;
+      }
+      .toggle-switch.active {
+        background: rgba(79, 156, 240, 0.3);
+      }
+      .toggle-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 20px;
+        height: 20px;
+        background: var(--accent);
+        border-radius: 999px;
+        transition: left 0.3s ease;
+      }
+      .toggle-switch.active .toggle-knob {
+        left: 28px;
+      }
+      @media (max-width: 640px) {
+        .language-toggle {
+          top: 10px;
+          right: 10px;
+          gap: 6px;
+        }
+        .language-toggle span {
+          font-size: 0.75rem;
+        }
+      }
     </style>
   </head>
   <body>
+    <div class="language-toggle" id="langToggle">
+      <span id="langLabel">ES</span>
+      <div class="toggle-switch" id="toggleSwitch">
+        <div class="toggle-knob"></div>
+      </div>
+      <span id="langLabelEn">EN</span>
+    </div>
     <div class="page">
       <div class="hero">
-        <h1>AI Value Hub</h1>
-        <p>Interactive architecture diagrams, deployment guides, and live demonstrations. These views serve as visual references for the system design, components, and project architecture.</p>
+        <h1 data-en="AI Value Hub" data-es="AI Value Hub">AI Value Hub</h1>
+        <p data-en="Interactive architecture diagrams, deployment guides, and live demonstrations. These views serve as visual references for the system design, components, and project architecture." data-es="Diagramas de arquitectura interactivos, guías de despliegue y demostraciones en vivo. Estas vistas sirven como referencias visuales para el diseño del sistema, componentes y arquitectura del proyecto.">Interactive architecture diagrams, deployment guides, and live demonstrations. These views serve as visual references for the system design, components, and project architecture.</p>
       </div>
 
       <div class="grid">
         <div class="card">
           <div>
-            <span class="badge">Architecture</span>
-            <h2>Detailed Architecture</h2>
-            <p>Professional view of the high-level design and main components of the system.</p>
+            <span class="badge" data-en="Architecture" data-es="Arquitectura">Architecture</span>
+            <h2 data-en="Detailed Architecture" data-es="Arquitectura detallada">Detailed Architecture</h2>
+            <p data-en="Professional view of the high-level design and main components of the system." data-es="Vista profesional del diseño de alto nivel y los componentes principales del sistema.">Professional view of the high-level design and main components of the system.</p>
           </div>
-          <a href="architecture-diagram.html" target="_blank" rel="noopener">Open</a>
+          <a href="architecture-diagram.html" target="_blank" rel="noopener" data-en="Open" data-es="Abrir">Open</a>
         </div>
 
         <div class="card">
           <div>
-            <span class="badge">Architecture</span>
-            <h2>Arquitectura detallada (ES)</h2>
-            <p>Versión en español de la arquitectura para compartir con stakeholders y equipos.</p>
+            <span class="badge" data-en="Architecture" data-es="Arquitectura">Architecture</span>
+            <h2 data-en="Detailed Architecture (ES)" data-es="Arquitectura detallada (ES)">Detailed Architecture (ES)</h2>
+            <p data-en="Spanish version of architecture to share with stakeholders and teams." data-es="Versión en español de la arquitectura para compartir con stakeholders y equipos.">Spanish version of architecture to share with stakeholders and teams.</p>
           </div>
-          <a href="architecture-diagram.es.html" target="_blank" rel="noopener">Abrir</a>
+          <a href="architecture-diagram.es.html" target="_blank" rel="noopener" data-en="Open" data-es="Abrir">Open</a>
         </div>
 
         <div class="card">
           <div>
-            <span class="badge">Fabric</span>
-            <h2>Microsoft Fabric Integration</h2>
-            <p>Live view of Microsoft Fabric integration for feeding the executive dashboard.</p>
+            <span class="badge" data-en="Fabric" data-es="Fabric">Fabric</span>
+            <h2 data-en="Microsoft Fabric Integration" data-es="Integración Microsoft Fabric">Microsoft Fabric Integration</h2>
+            <p data-en="Live view of Microsoft Fabric integration for feeding the executive dashboard." data-es="Vista en vivo de la integración Microsoft Fabric para alimentar el dashboard ejecutivo.">Live view of Microsoft Fabric integration for feeding the executive dashboard.</p>
           </div>
           <div>
-            <a href="architecture-fabric-live.html" target="_blank" rel="noopener" style="margin-right: 8px;">English</a>
-            <a href="architecture-fabric-live.es.html" target="_blank" rel="noopener">Español</a>
+            <a href="architecture-fabric-live.html" target="_blank" rel="noopener" style="margin-right: 8px;" data-en="English" data-es="English">English</a>
+            <a href="architecture-fabric-live.es.html" target="_blank" rel="noopener" data-en="Spanish" data-es="Español">Spanish</a>
           </div>
         </div>
 
         <div class="card">
           <div>
-            <span class="badge">Demo</span>
-            <h2>AI Value Hub Demo</h2>
-            <p>Visual presentation of the demo flow and product value blocks.</p>
+            <span class="badge" data-en="Demo" data-es="Demo">Demo</span>
+            <h2 data-en="AI Value Hub Demo" data-es="AI Value Hub Demo">AI Value Hub Demo</h2>
+            <p data-en="Visual presentation of the demo flow and product value blocks." data-es="Presentación visual del flujo del demo y los bloques de valor del producto.">Visual presentation of the demo flow and product value blocks.</p>
           </div>
-          <a href="ai-value-hub-demo.html" target="_blank" rel="noopener">Open</a>
+          <a href="ai-value-hub-demo.html" target="_blank" rel="noopener" data-en="Open" data-es="Abrir">Open</a>
         </div>
 
         <div class="card">
           <div>
-            <span class="badge">Reference</span>
-            <h2>Use Case Factory</h2>
-            <p>Executive reference document on business context and architecture proposal.</p>
+            <span class="badge" data-en="Reference" data-es="Referencia">Reference</span>
+            <h2 data-en="Use Case Factory" data-es="Use Case Factory">Use Case Factory</h2>
+            <p data-en="Executive reference document on business context and architecture proposal." data-es="Documento ejecutivo de referencia sobre contexto de negocio y propuesta de arquitectura.">Executive reference document on business context and architecture proposal.</p>
           </div>
-          <a href="AI_Use_Case_Factory_Company_Context_Engine_EN.html" target="_blank" rel="noopener">Open</a>
+          <a href="AI_Use_Case_Factory_Company_Context_Engine_EN.html" target="_blank" rel="noopener" data-en="Open" data-es="Abrir">Open</a>
         </div>
       </div>
     </div>
-  </body>
-</html>
+
+    <script>
+      const toggle = document.getElementById('toggleSwitch');
+      const langToggle = document.getElementById('langToggle');
+      const langLabel = document.getElementById('langLabel');
+      const langLabelEn = document.getElementById('langLabelEn');
+      let currentLang = localStorage.getItem('lang') || 'es';
+
+      function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('lang', lang);
+        
+        const isEnglish = lang === 'en';
+        toggle.classList.toggle('active', isEnglish);
+        langLabel.style.opacity = isEnglish ? 0.5 : 1;
+        langLabelEn.style.opacity = isEnglish ? 1 : 0.5;
+
+        document.querySelectorAll('[data-en][data-es]').forEach(el => {
+          el.textContent = el.getAttribute(`data-${lang}`);
+        });
+      }
+
+      toggle.addEventListener('click', () => {
+        setLanguage(currentLang === 'es' ? 'en' : 'es');
+      });
+
+      langLabel.addEventListener('click', () => setLanguage('es'));
+      langLabelEn.addEventListener('click', () => setLanguage('en'));
+
+      setLanguage(currentLang);
+    </script>
