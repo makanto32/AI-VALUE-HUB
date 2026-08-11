@@ -68,18 +68,26 @@ Endpoints MVP2 agregados:
 
 ## Ejecutar localmente (Desarrollo)
 
-### Ejecutar API
+### Requisitos
+- Python 3.11+
+- Node.js 18+
+
+### Pasos para ejecutar en local
+
+**1. Backend (FastAPI)**
 ```bash
 cd api
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-### Ejecutar Frontend
+**2. Frontend (React + Vite)**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Para desplegar en producción en Azure, consulta [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md).
+**Nota:** Los puertos utilizados en desarrollo local no son accesibles desde este repositorio en GitHub. Para acceder a las vistas publicadas, consulta la sección de "Vistas de Arquitectura (Live)".
+
+Para más información sobre despliegue en producción en Azure, consulta la [Guía de Instalación](docs/INSTALLATION_GUIDE.md).
