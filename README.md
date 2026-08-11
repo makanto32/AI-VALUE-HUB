@@ -78,3 +78,5 @@ cd frontend
 npm install
 npm run dev
 ```
+
+Para más información sobre despliegue en Azure, consulta [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md).
