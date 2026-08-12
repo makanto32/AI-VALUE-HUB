@@ -49,10 +49,13 @@ from .models import (
     TokenQuotaUpdateRequest,
     TechnicalValidation,
     TechnicalChatSubmitRequest,
+    TechnicalChatRequest,
+    TechnicalChatResponse,
     TechnicalInteraction,
     TechnicalQuestion,
     TechnicalQueueItem,
     TechnicalRejectionRequest,
+    AgentApprovalRequest,
     TechnicalQuestionsResponse,
     TechnicalValidationRequest,
     TechnicalValidationResponse,
@@ -3089,7 +3092,7 @@ def technical_approval(
     idea_id: str,
     current_user: UserProfile = Depends(get_current_user),
 ) -> IdeaCase:
-    """Approve an idea at technical level and generate architecture package."""
+    """Approve an idea at technical level and generate architecture package (requires both agent and human approval)."""
     if current_user.role != "technical":
         raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden aprobar ideas")
     
@@ -3104,6 +3107,10 @@ def technical_approval(
         raise HTTPException(status_code=400, detail="La idea debe tener status 'business_viable'")
     if idea.current_stage != IdeaStage.technical_validation:
         raise HTTPException(status_code=400, detail="La idea debe estar en etapa 'technical_validation'")
+    
+    # Verify agent approval
+    if not idea.agent_approved:
+        raise HTTPException(status_code=400, detail="El agente IA debe aprobar la idea antes de que el equipo humano pueda hacerlo")
     
     # Generate architecture package if not already exists
     if idea.architecture_package is None:
@@ -3122,6 +3129,10 @@ def technical_approval(
             "next_actions": next_actions,
             "generated_at": datetime.utcnow().isoformat(),
         }
+    
+    # Mark as human approved
+    idea.human_approved = True
+    idea.human_approval_date = datetime.utcnow()
     
     return idea_store.save(idea)
 
@@ -3146,6 +3157,88 @@ def technical_rejection(
 
     idea.status = IdeaStatus.rejected
     idea.rejection = RejectionInfo(phase=RejectionPhase.technical, reason=request.reason)
+    return idea_store.save(idea)
+
+
+@app.post("/ideas/{idea_id}/technical-chat", response_model=TechnicalChatResponse)
+def technical_chat(
+    idea_id: str,
+    request: TechnicalChatRequest,
+    current_user: UserProfile = Depends(get_current_user),
+) -> TechnicalChatResponse:
+    """Add a technical chat interaction (question/answer with AI agent)."""
+    if current_user.role not in ["technical", "business"]:
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden participar en chat tecnico")
+    
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No tienes acceso a esta idea")
+    
+    # Simulate AI agent response (in production, call actual AI service)
+    agent_response = f"Gracias por tu pregunta sobre {request.question_type}. Basándome en el problema y arquitectura propuesta, "
+    agent_response += "recomiendo enfocarse en la escalabilidad y seguridad. "
+    agent_response += "¿Necesitas más claridad sobre algún componente específico?"
+    
+    agent_questions = [
+        "¿Cuál es el volumen de transacciones esperado mensualmente?",
+        "¿Tienes requisitos específicos de compliance o regulación?",
+        "¿Cuál es el tiempo de respuesta máximo aceptable?"
+    ]
+    
+    interaction = TechnicalInteraction(
+        asked_questions=idea.technical_questions or [],
+        answers=[],
+        agent_summary=agent_response,
+        technical_validation=idea.technical_validation or TechnicalValidation(
+            recommendation="proceed",
+            estimated_complexity_hours=40,
+            required_roles=["Backend", "Frontend", "DevOps"],
+            flagged_risks=[]
+        ),
+        created_at=datetime.utcnow()
+    )
+    
+    idea.technical_interactions.append(interaction)
+    idea_store.save(idea)
+    
+    return TechnicalChatResponse(
+        interaction_id=f"{idea_id}-{len(idea.technical_interactions)}",
+        agent_response=agent_response,
+        agent_questions=agent_questions,
+        next_steps="Por favor revisa las preguntas anteriores y proporciona más detalles técnicos.",
+        created_at=datetime.utcnow()
+    )
+
+
+@app.post("/ideas/{idea_id}/agent-approval", response_model=IdeaCase)
+def agent_approval(
+    idea_id: str,
+    request: AgentApprovalRequest,
+    current_user: UserProfile = Depends(get_current_user),
+) -> IdeaCase:
+    """Record AI agent approval of technical idea."""
+    if current_user.role != "technical":
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden registrar aprobacion del agente")
+    
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No tienes acceso a esta idea")
+    
+    if len(idea.technical_interactions) == 0:
+        raise HTTPException(status_code=400, detail="Debes completar al menos una interaccion tecnica antes de aprobacion del agente")
+    
+    idea.agent_approved = True
+    idea.agent_approval_summary = request.summary
+    idea.agent_approval_date = datetime.utcnow()
+    
+    # Store recommendations in technical validation if available
+    if idea.technical_validation:
+        idea.technical_validation.flagged_risks = request.recommendations
+    
     return idea_store.save(idea)
 
 

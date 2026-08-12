@@ -202,6 +202,11 @@ class IdeaCase(BaseModel):
     technical_questions: List[TechnicalQuestion] = Field(default_factory=list)
     technical_interactions: List[TechnicalInteraction] = Field(default_factory=list)
     technical_validation: Optional[TechnicalValidation] = None
+    agent_approved: bool = Field(default=False)
+    agent_approval_summary: Optional[str] = None
+    agent_approval_date: Optional[datetime] = None
+    human_approved: bool = Field(default=False)
+    human_approval_date: Optional[datetime] = None
     architecture_package: Optional[ArchitecturePackage] = None
     response_composition: Optional[ResponseComposition] = None
     rejection: Optional[RejectionInfo] = None
@@ -251,6 +256,25 @@ class DeploymentStatusUpdateRequest(BaseModel):
 
 class TechnicalRejectionRequest(BaseModel):
     reason: str = Field(..., min_length=5, max_length=500)
+
+
+class TechnicalChatRequest(BaseModel):
+    message: str = Field(..., min_length=5, max_length=2000)
+    question_type: str = Field(default="technical_clarification")  # technical_clarification, architecture_feedback, etc.
+
+
+class AgentApprovalRequest(BaseModel):
+    summary: str = Field(..., min_length=20, max_length=1000)
+    confidence_level: str = Field(..., description="high, medium, low")
+    recommendations: List[str] = Field(default_factory=list)
+
+
+class TechnicalChatResponse(BaseModel):
+    interaction_id: str
+    agent_response: str
+    agent_questions: List[str] = Field(default_factory=list)
+    next_steps: str
+    created_at: datetime
 
 
 class ValueEconomics(BaseModel):
