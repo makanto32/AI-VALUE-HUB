@@ -253,6 +253,14 @@ const uiText = {
     technicalValidation: "Validacion tecnica",
     technicalReviewPending: "En revisión técnica",
     technicalApprove: "Aprobar",
+    technicalChat: "Chat técnico con agente",
+    technicalChatPlaceholder: "Pregunta clarifications técnicas al agente...",
+    technicalSendMessage: "Enviar",
+    agentApproval: "Aprobación del agente",
+    agentApproveButton: "Aprobar (Agente IA)",
+    agentApprovalSummary: "Resumen de aprobación del agente",
+    agentApprovalPlaceholder: "Escribe el resumen de aprobación...",
+    agentApprovalRequired: "Requiere aprobación del agente IA primero",
     moveToFunding: "Pasar a funding",
     moveToDevelopment: "Pasar a desarrollo",
     moveToProduction: "Pasar a produccion",
@@ -501,6 +509,14 @@ const uiText = {
     technicalValidation: "Technical Validation",
     technicalReviewPending: "Under technical review",
     technicalApprove: "Approve",
+    technicalChat: "Technical chat with agent",
+    technicalChatPlaceholder: "Ask technical clarifications to the agent...",
+    technicalSendMessage: "Send",
+    agentApproval: "Agent Approval",
+    agentApproveButton: "Approve (AI Agent)",
+    agentApprovalSummary: "Agent approval summary",
+    agentApprovalPlaceholder: "Write the approval summary...",
+    agentApprovalRequired: "Requires AI agent approval first",
     moveToFunding: "Move to funding",
     moveToDevelopment: "Move to development",
     moveToProduction: "Move to production",
@@ -750,6 +766,14 @@ const uiText = {
     technicalValidation: "Validacao tecnica",
     technicalReviewPending: "Em revisao tecnica",
     technicalApprove: "Aprovar",
+    technicalChat: "Chat tecnico com agente",
+    technicalChatPlaceholder: "Faca esclarecimentos tecnicos ao agente...",
+    technicalSendMessage: "Enviar",
+    agentApproval: "Aprovacao do agente",
+    agentApproveButton: "Aprovar (Agente IA)",
+    agentApprovalSummary: "Resumo de aprovacao do agente",
+    agentApprovalPlaceholder: "Escreva o resumo de aprovacao...",
+    agentApprovalRequired: "Requer aprovacao do agente IA primeiro",
     moveToFunding: "Mover para funding",
     moveToDevelopment: "Mover para desenvolvimento",
     moveToProduction: "Mover para producao",
@@ -1009,12 +1033,17 @@ function App() {
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
   const [activeClarificationIdeaId, setActiveClarificationIdeaId] = useState("");
   const [activeTechnicalIdeaId, setActiveTechnicalIdeaId] = useState("");
+  const [activeAgentChatIdeaId, setActiveAgentChatIdeaId] = useState("");
   const [clarificationQuestions, setClarificationQuestions] = useState([]);
   const [clarificationAnswers, setClarificationAnswers] = useState({});
   const [technicalQuestions, setTechnicalQuestions] = useState([]);
   const [technicalAnswers, setTechnicalAnswers] = useState({});
   const [technicalConversation, setTechnicalConversation] = useState([]);
   const [technicalDraft, setTechnicalDraft] = useState("");
+  const [agentChatMessages, setAgentChatMessages] = useState({});
+  const [agentChatInput, setAgentChatInput] = useState("");
+  const [agentApprovalDrafts, setAgentApprovalDrafts] = useState({});
+  const [showAgentApprovalDialog, setShowAgentApprovalDialog] = useState("");
 
   const [error, setError] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState(null);
@@ -1271,6 +1300,86 @@ function App() {
       link.remove();
       window.URL.revokeObjectURL(url);
       setError("");
+    } catch (err) {
+      setError(err.message || t.errorUnexpected);
+    }
+  }
+
+  async function handleTechnicalChat(ideaId) {
+    if (!agentChatInput.trim()) return;
+    
+    try {
+      const response = await apiFetch(`/ideas/${ideaId}/technical-chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: agentChatInput.trim(),
+          question_type: "technical_clarification"
+        }),
+      });
+      
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.detail || t.errorUnexpected);
+        return;
+      }
+      
+      const result = await response.json();
+      
+      // Store chat history
+      setAgentChatMessages((prev) => ({
+        ...prev,
+        [ideaId]: [
+          ...(prev[ideaId] || []),
+          {
+            type: "user",
+            text: agentChatInput.trim(),
+            timestamp: new Date().toISOString()
+          },
+          {
+            type: "agent",
+            text: result.agent_response,
+            questions: result.agent_questions,
+            timestamp: result.created_at
+          }
+        ]
+      }));
+      
+      setAgentChatInput("");
+      setError("");
+      await loadTechnicalQueue();
+    } catch (err) {
+      setError(err.message || t.errorUnexpected);
+    }
+  }
+
+  async function handleAgentApproval(ideaId) {
+    if (!agentApprovalDrafts[ideaId]?.trim()) {
+      alert("Por favor escribe un resumen de aprobación");
+      return;
+    }
+    
+    try {
+      const response = await apiFetch(`/ideas/${ideaId}/agent-approval`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          summary: agentApprovalDrafts[ideaId].trim(),
+          confidence_level: "high",
+          recommendations: []
+        }),
+      });
+      
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.detail || t.errorUnexpected);
+        return;
+      }
+      
+      setShowAgentApprovalDialog("");
+      setAgentApprovalDrafts((prev) => ({ ...prev, [ideaId]: "" }));
+      setError("");
+      await loadTechnicalQueue();
     } catch (err) {
       setError(err.message || t.errorUnexpected);
     }
@@ -3208,17 +3317,154 @@ function App() {
                           </details>
                         </div>
                       )}
+
+                      {/* Approval Status Section */}
+                      <div className="approval-status" style={{ marginTop: 16, padding: "12px", backgroundColor: "#f5f5f5", borderRadius: "4px" }}>
+                        <p style={{ marginBottom: 8, fontWeight: 500 }}>
+                          {t.agentApproval}:
+                          <span style={{ marginLeft: 8 }}>
+                            {idea.agent_approved ? "✓ Aprobado" : "○ Pendiente"}
+                          </span>
+                        </p>
+                        <p style={{ marginBottom: 12, fontWeight: 500 }}>
+                          {t.technicalApprove} (Humano):
+                          <span style={{ marginLeft: 8 }}>
+                            {idea.human_approved ? "✓ Aprobado" : "○ Pendiente"}
+                          </span>
+                        </p>
+                      </div>
+
+                      {/* Technical Chat Section */}
+                      {activeAgentChatIdeaId === idea.idea_id && (
+                        <div className="chat-section" style={{ marginTop: 12, padding: "12px", backgroundColor: "#f9f9f9", borderRadius: "4px", border: "1px solid #ddd" }}>
+                          <h4>{t.technicalChat}</h4>
+                          <div className="chat-history" style={{ maxHeight: "200px", overflowY: "auto", marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #ddd" }}>
+                            {(agentChatMessages[idea.idea_id] || []).map((msg, idx) => (
+                              <div key={idx} style={{ marginBottom: 8, textAlign: msg.type === "user" ? "right" : "left" }}>
+                                <div style={{ 
+                                  display: "inline-block", 
+                                  maxWidth: "80%",
+                                  padding: "8px 12px", 
+                                  backgroundColor: msg.type === "user" ? "#007bff" : "#e9ecef",
+                                  color: msg.type === "user" ? "white" : "black",
+                                  borderRadius: "4px",
+                                  fontSize: "12px"
+                                }}>
+                                  <p style={{ margin: 0 }}>{msg.text}</p>
+                                  {msg.questions && msg.questions.length > 0 && (
+                                    <div style={{ marginTop: 8, fontSize: "11px", opacity: 0.9 }}>
+                                      <p style={{ margin: "4px 0", fontWeight: "bold" }}>Preguntas:</p>
+                                      {msg.questions.map((q, qi) => (
+                                        <p key={qi} style={{ margin: "2px 0" }}>• {q}</p>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <input
+                              type="text"
+                              placeholder={t.technicalChatPlaceholder}
+                              value={agentChatInput}
+                              onChange={(e) => setAgentChatInput(e.target.value)}
+                              onKeyPress={(e) => e.key === "Enter" && handleTechnicalChat(idea.idea_id)}
+                              style={{ flex: 1, padding: "8px", fontSize: "12px", borderRadius: "4px", border: "1px solid #ccc" }}
+                            />
+                            <button
+                              type="button"
+                              className="btn-quiet"
+                              onClick={() => handleTechnicalChat(idea.idea_id)}
+                              style={{ padding: "8px 12px", fontSize: "12px" }}
+                            >
+                              {t.technicalSendMessage}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Agent Approval Dialog */}
+                      {showAgentApprovalDialog === idea.idea_id && (
+                        <div className="approval-dialog" style={{ marginTop: 12, padding: "12px", backgroundColor: "#fff3cd", borderRadius: "4px", border: "1px solid #ffc107" }}>
+                          <h4>{t.agentApprovalSummary}</h4>
+                          <textarea
+                            placeholder={t.agentApprovalPlaceholder}
+                            value={agentApprovalDrafts[idea.idea_id] || ""}
+                            onChange={(e) => setAgentApprovalDrafts((prev) => ({ ...prev, [idea.idea_id]: e.target.value }))}
+                            style={{ width: "100%", height: "80px", padding: "8px", fontSize: "12px", borderRadius: "4px", border: "1px solid #ddd", marginBottom: 8 }}
+                          />
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button
+                              type="button"
+                              className="btn-approve"
+                              onClick={() => handleAgentApproval(idea.idea_id)}
+                              style={{ flex: 1 }}
+                            >
+                              Confirmar aprobación
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-quiet"
+                              onClick={() => setShowAgentApprovalDialog("")}
+                              style={{ flex: 1 }}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="action-row action-row-compact">
                         <button type="button" onClick={() => setSelectedIdeaId(idea.idea_id)}>
                           {t.viewInFocus}
                         </button>
-                        <button
-                          type="button"
-                          className="btn-approve"
-                          onClick={() => handleTechnicalAction(idea.idea_id, "technical-approval", "POST")}
-                        >
-                          {t.technicalApprove}
-                        </button>
+
+                        {/* Chat Button */}
+                        {!idea.agent_approved && (
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            onClick={() => setActiveAgentChatIdeaId(idea.idea_id)}
+                          >
+                            {t.technicalChat}
+                          </button>
+                        )}
+
+                        {/* Agent Approval Button */}
+                        {!idea.agent_approved && (
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            onClick={() => setShowAgentApprovalDialog(idea.idea_id)}
+                          >
+                            {t.agentApproveButton}
+                          </button>
+                        )}
+
+                        {/* Human Approval Button - Only if agent approved */}
+                        {idea.agent_approved && (
+                          <button
+                            type="button"
+                            className="btn-approve"
+                            onClick={() => handleTechnicalAction(idea.idea_id, "technical-approval", "POST")}
+                          >
+                            {t.technicalApprove}
+                          </button>
+                        )}
+
+                        {/* If agent approval is required but not done, show disabled approve button */}
+                        {!idea.agent_approved && (
+                          <button
+                            type="button"
+                            className="btn-quiet"
+                            disabled
+                            title={t.agentApprovalRequired}
+                          >
+                            {t.technicalApprove} ({t.agentApprovalRequired})
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           className="btn-quiet"
@@ -3245,6 +3491,8 @@ function App() {
                             type="button"
                             className="btn-outline"
                             onClick={() => handleDownloadArchitecturePdf(idea.idea_id)}
+                            disabled={!idea.human_approved}
+                            title={idea.human_approved ? "" : "Disponible después de aprobación humana"}
                           >
                             {t.downloadArchitecturePdf}
                           </button>
