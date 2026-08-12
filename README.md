@@ -186,6 +186,15 @@ Access the project's visual views directly. All views below are read-only and re
 - [ ] **Multi-tenant Isolation** - Ensure zero data leakage
 - [ ] **High Availability** - Active-active deployment in multi-regions
 
+### Future Marketplace-Oriented Capabilities (Under Evaluation)
+See [docs/APPLICATION_OVERVIEW.md](docs/APPLICATION_OVERVIEW.md#roadmap) for the full list of upcoming features:
+- [ ] **Community Voting / Upvoting** - Crowdsourced validation of ideas
+- [ ] **Download / Adoption Metrics** - Track usage and deployment success
+- [ ] **User Comments and Reviews** - Community feedback on initiatives
+- [ ] **Publication Workflow** - Draft → Published → Versioned lifecycle
+- [ ] **Admin Center** - Token/Cost/ROI governance and monitoring
+- [ ] **Multi-tenant IaC** - Packaged deployment per client with Infrastructure as Code
+
 ## Authentication (Demo + Entra-Ready)
 
 ### Active Provider
