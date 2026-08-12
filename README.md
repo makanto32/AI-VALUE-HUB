@@ -1,225 +1,225 @@
 # AI Value Hub
 
-Base proyecto alineada al roadmap del documento de arquitectura.
+Project foundation aligned with architecture document roadmap.
 
-## Licencia
-Este repositorio está licenciado bajo MIT.
-Consulta los términos completos en [LICENSE](LICENSE).
+## License
+This repository is licensed under MIT.
+See full terms in [LICENSE](LICENSE).
 
 ## ⭐ Star Here - Quick Start
 
-**AI Value Hub** es una plataforma de gestión y validación de iniciativas impulsadas por IA para organizaciones financieras. Implementa un workflow de 3 fases con gates económicos, validación técnica robusta y detección inteligente de duplicidad.
+**AI Value Hub** is an AI-powered initiative management and validation platform for financial organizations. Implements a 3-phase workflow with economic gates, robust technical validation, and intelligent duplicate detection.
 
-### 🎯 Valor Clave
-- **Validación 3-Fases**: Intake → Business (context-aware) → Technical (with economic gate)
-- **Detección Inteligente de Duplicidad**: 4-estrategia semántica detecta duplicados incluso con wording distinto
-- **Gate Económico**: Valida viabilidad financiera (ratio cost-to-value) antes de financiación
-- **Multi-rol**: Business Analyst, Technical Reviewer, Admin
-- **Production-Ready Demo**: Datos de ejemplo, workflow completo, pronto para Entra ID
+### 🎯 Key Value Proposition
+- **3-Phase Validation**: Intake → Business (context-aware) → Technical (with economic gate)
+- **Intelligent Duplicate Detection**: 4-strategy semantic analysis detects duplicates even with different wording
+- **Economic Viability Gate**: Validates financial viability (cost-to-value ratio) before funding
+- **Multi-role**: Business Analyst, Technical Reviewer, Admin
+- **Production-Ready Demo**: Sample data, complete workflow, Entra ID ready
 
 ---
 
-## 🚀 Live Views - Vistas Interactivas (GitHub Pages)
+## 🚀 Live Views - Interactive Demonstrations (GitHub Pages)
 
-Accede directamente a las vistas visuales del proyecto. Las siguientes son solo para lectura y no requieren instalación local:
+Access the project's visual views directly. All views below are read-only and require no local installation:
 
-- **📊 [Centro de Control](https://makanto32.github.io/AI-Opportunity-Hub/)** - Dashboard de navegación principal
-- **💡 [AI Value Hub Interactive Demo](https://makanto32.github.io/AI-Opportunity-Hub/ai-value-hub-demo.html)** - Flujo visual del workflow completo
-- **🏗️ [Arquitectura Técnica (EN)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.html)** - Diagrama de componentes y integraciones
-- **🏗️ [Arquitectura Técnica (ES)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.es.html)** - Versión localizada en español
-- **📈 [Arquitectura Microsoft Fabric + Executive Dashboard](https://makanto32.github.io/AI-Opportunity-Hub/architecture-fabric-live.html)** - Integración live con Power BI/Fabric para métricas KPI
-- **📖 [Use Case Factory & Company Context Engine](https://makanto32.github.io/AI-Opportunity-Hub/AI_Use_Case_Factory_Company_Context_Engine_EN.html)** - Documento de referencia arquitectónico y patrones
+- **📊 [Control Center](https://makanto32.github.io/AI-Opportunity-Hub/)** - Main navigation dashboard
+- **💡 [AI Value Hub Interactive Demo](https://makanto32.github.io/AI-Opportunity-Hub/ai-value-hub-demo.html)** - Visual workflow of complete journey
+- **🏗️ [Technical Architecture (EN)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.html)** - Component and integration diagrams
+- **🏗️ [Technical Architecture (ES)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.es.html)** - Spanish localized version
+- **📈 [Microsoft Fabric Architecture + Executive Dashboard](https://makanto32.github.io/AI-Opportunity-Hub/architecture-fabric-live.html)** - Live Power BI/Fabric integration for KPI metrics
+- **📖 [Use Case Factory & Company Context Engine](https://makanto32.github.io/AI-Opportunity-Hub/AI_Use_Case_Factory_Company_Context_Engine_EN.html)** - Architectural reference document and patterns
 
 ---
 
 ## 🎯 Core Capabilities
 
-### Fase 1: Intake & Contexto
-- ✅ Captura estructurada de idea con problem statement y expected value
-- ✅ Context Engine por tenant: valúa viabilidad dentro de línea base empresarial
-- ✅ Soporte multi-idioma (ES, EN, PT) con traducción automática vía i18n
-- ✅ Aislamiento por usuario: cada sesión solo consulta sus ideas
+### Phase 1: Intake & Context
+- ✅ Structured idea capture with problem statement and expected value
+- ✅ Per-tenant Context Engine: evaluates viability within business baseline
+- ✅ Multi-language support (ES, EN, PT) with automatic i18n translation
+- ✅ User-level isolation: each session accesses only their own ideas
 
-### Fase 2: Business Validation (Context-Aware)
-- ✅ Cuestionario de validación dinámico basado en contexto empresarial
-- ✅ **Detección Inteligente de Duplicidad** con 4-estrategia semántica:
-  - Keyword similarity (compatibilidad legado)
+### Phase 2: Business Validation (Context-Aware)
+- ✅ Dynamic validation questionnaire based on business context
+- ✅ **Intelligent Duplicate Detection** with 4-strategy semantic analysis:
+  - Keyword similarity (backward compatibility)
   - Structural string similarity (SequenceMatcher)
-  - Semantic concept overlap (sinónimos del dominio financiero)
-  - Intention analysis (título + problem statement combinados)
-  - **Detecta duplicados incluso con wording distinto o descripción reducida**
-- ✅ Scoring automático basado en respuestas
-- ✅ Flujo de clarificación interactivo si scoring es bajo
+  - Semantic concept overlap (financial domain synonyms)
+  - Intention analysis (title + problem statement combined)
+  - **Detects duplicates even with different wording or reduced description**
+- ✅ Automatic scoring based on responses
+- ✅ Interactive clarification flow if scoring is low
 
-### Fase 3: Technical Validation (Con Gate Económico)
-- ✅ **Queue técnica dedicada** para revisores técnicos
-- ✅ **Análisis de Value Economics** automático:
-  - Extrae valor esperado de descripción (high/medium/low confidence)
-  - Calcula costo mensual de consumo de infraestructura
-  - Computa ratio value-to-cost y payback period
+### Phase 3: Technical Validation (With Economic Gate)
+- ✅ **Dedicated technical queue** for technical reviewers
+- ✅ **Automatic Value Economics analysis**:
+  - Extracts expected value from description (high/medium/low confidence)
+  - Calculates monthly infrastructure consumption cost
+  - Computes value-to-cost ratio and payback period
   - Period normalization (monthly/annual/quarterly/weekly/daily)
-- ✅ **Economic Viability Gate**: bloquea fundación de ideas económicamente inviables
+- ✅ **Economic Viability Gate**: blocks funding of economically unfeasible ideas
   - Verdicts: favorable (>=3.0x), acceptable (>=1.5x), marginal (>=1.0x), unfavorable (<1.0x)
-  - Override opcional para contexto de negocio via `?override_economics=true`
-- ✅ **Technical Rejection Workflow**: registra razón de rechazo
-- ✅ Generación de Architecture Package con componentes, integraciones, riesgos
+  - Optional override for business context via `?override_economics=true`
+- ✅ **Technical Rejection Workflow**: records rejection reason
+- ✅ Architecture Package generation with components, integrations, risks
 
-### Salidas
-- ✅ PDF profesional con arquitectura, cost/value analysis y ROI metrics
-- ✅ Executive Dashboard con KPIs: ideas en pipeline, viabilidad, ROI, adoption rate
-- ✅ Admin Panel con métricas de rendimiento y configuración de Business Rules
+### Outputs
+- ✅ Professional PDF with architecture, cost/value analysis, and ROI metrics
+- ✅ Executive Dashboard with KPIs: pipeline ideas, viability, ROI, adoption rate
+- ✅ Admin Panel with performance metrics and Business Rules configuration
 
 ---
 
-## 👥 Roles & Permisos
+## 👥 Roles & Permissions
 
-| Rol | Responsabilidades | Vistas Principales |
+| Role | Responsibilities | Main Views |
 |-----|------------------|------------------|
-| **Business Analyst** | Intake, validación de negocio, respuestas de contexto | Home, My Ideas, Clarification Queue |
-| **Technical Reviewer** | Validación técnica, decisión económica, rechazo con razón | Technical Queue (económica), Architecture Package Review |
-| **Admin** | Gestión de contexto, configuración de reglas, dashboard ejecutivo | Admin Panel, Executive Dashboard, Context Manager |
+| **Business Analyst** | Intake, business validation, context answers | Home, My Ideas, Clarification Queue |
+| **Technical Reviewer** | Technical validation, economic decision, rejection with reason | Technical Queue (economic), Architecture Package Review |
+| **Admin** | Context management, business rules configuration, executive dashboard | Admin Panel, Executive Dashboard, Context Manager |
 
 ---
 
-## Integracion Microsoft Fabric
-- Provider semantico habilitado para dashboard ejecutivo via Power BI / Fabric.
-- Scripts de soporte:
+## Microsoft Fabric Integration
+- Semantic provider enabled for executive dashboard via Power BI / Fabric.
+- Support scripts:
 	- `scripts/fabric-provision-semantic.ps1`
 	- `scripts/fabric-sync-semantic.ps1`
-- Referencia de setup: `docs/FABRIC_MEDALLION_SEMANTIC_SETUP.md`
+- Setup reference: `docs/FABRIC_MEDALLION_SEMANTIC_SETUP.md`
 
-## MVP1 Implementado ✅
-- ✅ Idea intake con captura de contexto
-- ✅ Context Engine por tenant para evaluación de viabilidad
-- ✅ Business validation con cuestionario dinámico + filtro técnico inicial
-- ✅ Estado del caso de uso con motivo de rechazo (fase business o technical)
-- ✅ UI con flujo de login demo, captura de contexto, y vista "Mis ideas"
-- ✅ Aislamiento por usuario: cada sesión solo consulta sus ideas
-- ✅ Soporte multi-idioma (ES/EN/PT)
-- ✅ Demo con 13 ideas de ejemplo preargadas
+## MVP1 Implemented ✅
+- ✅ Idea intake with context capture
+- ✅ Per-tenant Context Engine for viability evaluation
+- ✅ Business validation with dynamic questionnaire + initial technical filter
+- ✅ Use case status with rejection reason (business or technical phase)
+- ✅ UI with login demo flow, context capture, and "My Ideas" view
+- ✅ User-level isolation: each session accesses only their ideas
+- ✅ Multi-language support (ES/EN/PT)
+- ✅ Demo with 13 example ideas pre-loaded
 
-## MVP2 Implementado ✅
-- ✅ Persistencia en DB SQLite (evolucionable a PostgreSQL)
-- ✅ Metadata de archivos de contexto en DB + contenido en Blob storage
-- ✅ Validación técnica por endpoint dedicado
-- ✅ Generación de Architecture Package profesional (9 secciones, PDF exportable)
-- ✅ Response Composer con resumen ejecutivo y recomendaciones
+## MVP2 Implemented ✅
+- ✅ Persistence in SQLite DB (evolvable to PostgreSQL)
+- ✅ Context file metadata in DB + content in Blob storage
+- ✅ Technical validation via dedicated endpoint
+- ✅ Professional Architecture Package generation (9 sections, PDF exportable)
+- ✅ Response Composer with executive summary and recommendations
 
-## 🎯 Últimas Actualizaciones (v2.1) - Robust Validation & Economic Gating
+## 🎯 Latest Updates (v2.1) - Robust Validation & Economic Gating
 
-### Detección Inteligente de Duplicidad (4-Estrategia Semántica)
-- **Problema resuelto**: Las búsquedas de palabras clave simples no detectaban duplicados cuando el wording cambiaba
-- **Solución**: Análisis combinado de 4 dimensiones:
-  1. **Keyword Similarity** - Palabras compartidas directas
-  2. **Structural String Similarity** - SequenceMatcher detecta similitud incluso con cambios de formato
-  3. **Semantic Concept Overlap** - Mapeo de sinónimos del dominio (predicción ↔ predictor, rotación ↔ churn)
-  4. **Intention Analysis** - Combina título + problem statement para detectar objetivo subyacente
-- **Resultado**: Detecta duplicidad incluso cuando:
-  - Cambias "Predicción" por "Predictor"
-  - Reduces descripción significativamente
-  - Usas sinónimos distintos para el mismo problema
-  - Modificas wording pero objetivo es idéntico
+### Intelligent Duplicate Detection (4-Strategy Semantic)
+- **Problem solved**: Simple keyword searches did not detect duplicates when wording changed
+- **Solution**: Combined analysis across 4 dimensions:
+  1. **Keyword Similarity** - Direct shared words
+  2. **Structural String Similarity** - SequenceMatcher detects similarity even with format changes
+  3. **Semantic Concept Overlap** - Domain synonym mapping (prediction ↔ predictor, churn ↔ attrition)
+  4. **Intention Analysis** - Combines title + problem statement to detect underlying objective
+- **Result**: Detects duplicates even when:
+  - You change "Prediction" to "Predictor"
+  - You significantly reduce description
+  - You use different synonyms for the same problem
+  - You modify wording but objective is identical
 
-### Technical Queue con Value Economics Automático
-- **Rol**: Technical Reviewer accede a queue de ideas business_viable
-- **Análisis automático**: Sistema calcula value economics:
-  - Extrae valor esperado de descripción (confidence: high/medium/low)
-  - Resuelve período (anual → mensual, etc.)
-  - Calcula costo mensual de consumo de infraestructura
-  - Computa ratio value-to-cost y payback period
-  - Genera verdict: favorable/acceptable/marginal/unfavorable
+### Technical Queue with Automatic Value Economics
+- **Role**: Technical Reviewer accesses queue of business_viable ideas
+- **Automatic analysis**: System calculates value economics:
+  - Extracts expected value from description (confidence: high/medium/low)
+  - Resolves period (annual → monthly, etc.)
+  - Calculates monthly infrastructure consumption cost
+  - Computes value-to-cost ratio and payback period
+  - Generates verdict: favorable/acceptable/marginal/unfavorable
 
 ### Economic Viability Gate
-- **Bloquea fundación** si ratio < 1.0x (inviable económicamente)
-- **Requiere override** si ratio marginal (1.0x-1.5x) o needs_quantification
-- **Permite aprobación** si ratio favorable (>=3.0x) o acceptable (1.5x-3.0x)
-- **Objetivo**: Evita invertir en ideas técnicamente viables pero económicamente inviables
+- **Blocks funding** if ratio < 1.0x (economically unfeasible)
+- **Requires override** if ratio marginal (1.0x-1.5x) or needs_quantification
+- **Permits approval** if ratio favorable (>=3.0x) or acceptable (1.5x-3.0x)
+- **Objective**: Avoid investing in technically viable but economically unfeasible ideas
 
 ### Technical Rejection Workflow
-- Technical Reviewer puede rechazar ideas con razón estructurada
-- Histórico de rechazos por phase (business vs technical)
-- Insights para mejorar Business Validation rules
+- Technical Reviewer can reject ideas with structured reason
+- Rejection history by phase (business vs technical)
+- Insights to improve Business Validation rules
 
 ### PDF Architecture Package
-- 9 secciones: Executive Summary, Architecture Diagram, Components, Integrations, Risks, Deployment Steps, Cost Analysis, ROI Metrics, Contact
-- Exportable en formato profesional para stakeholders
-- Incluye análisis de consumo mensual y payback period
+- 9 sections: Executive Summary, Architecture Diagram, Components, Integrations, Risks, Deployment Steps, Cost Analysis, ROI Metrics, Contact
+- Exportable in professional format for stakeholders
+- Includes monthly consumption analysis and payback period
 
 ### UI/UX Improvements
-- Removidos emojis, reemplazados con text labels
-- Dashboard metric tooltips documentan cómo se calcula cada métrica
-- Admin Panel metric help texts (14+ en ES/EN/PT)
-- Real-time polling cada 10s para sincronización de estado
+- Removed emojis, replaced with text labels
+- Dashboard metric tooltips document how each metric is calculated
+- Admin Panel metric help texts (14+ in ES/EN/PT)
+- Real-time polling every 10s for state synchronization
 
 ---
 
 ## 🔮 Roadmap - Not Yet Implemented
 
 ### Phase 3: Production Deployment & Monitoring (Q3-Q4 2026)
-- [ ] **Entra ID Integration** - Reemplazar auth mock con Azure Entra
+- [ ] **Entra ID Integration** - Replace auth mock with Azure Entra
 - [ ] **Production Database** - PostgreSQL + connection pooling
-- [ ] **Blob Storage** - Azure Blob Storage para contexto files (fallback: local)
+- [ ] **Blob Storage** - Azure Blob Storage for context files (fallback: local)
 - [ ] **Observability** - Application Insights logging + alerts
-- [ ] **API Rate Limiting** - Protección contra abuse
-- [ ] **Audit Logging** - Trail completo de cambios para compliance
+- [ ] **API Rate Limiting** - Protection against abuse
+- [ ] **Audit Logging** - Complete change trail for compliance
 
 ### Phase 4: Advanced Analytics & ML (Q1 2027)
-- [ ] **Collaborative Filtering** - Recomendaciones de ideas relacionadas basadas en adoption patterns
-- [ ] **Semantic Search** - Búsqueda de ideas por significado (no solo keywords)
-- [ ] **Predictive Scoring** - ML model para predecir viabilidad basado en features históricos
-- [ ] **Anomaly Detection** - Flagear patrones inusuales en valuations
-- [ ] **Custom ML Models** - Permitir upload de modelos por tenant
+- [ ] **Collaborative Filtering** - Idea recommendations based on adoption patterns
+- [ ] **Semantic Search** - Search ideas by meaning (not just keywords)
+- [ ] **Predictive Scoring** - ML model to predict viability based on historical features
+- [ ] **Anomaly Detection** - Flag unusual patterns in valuations
+- [ ] **Custom ML Models** - Allow model upload per tenant
 
 ### Phase 5: Ecosystem & Integration (H2 2027)
-- [ ] **Salesforce Integration** - Sync de opportunities → ideas
-- [ ] **Dynamics 365 CRM** - Integración con pipeline de ventas
-- [ ] **Teams/Slack Notifications** - Alertas en canales de comunicación
-- [ ] **Power Automate Workflows** - Triggering de RPA
-- [ ] **OpenAPI/GraphQL** - Public API para partners
+- [ ] **Salesforce Integration** - Sync opportunities → ideas
+- [ ] **Dynamics 365 CRM** - Sales pipeline integration
+- [ ] **Teams/Slack Notifications** - Alerts in communication channels
+- [ ] **Power Automate Workflows** - RPA triggering
+- [ ] **OpenAPI/GraphQL** - Public API for partners
 - [ ] **Webhooks** - Event-driven architecture
 
 ### Phase 6: Governance & Scale (2028+)
 - [ ] **Role-Based Access Control (RBAC)** - Granular permissions (not just 3 roles)
-- [ ] **Workflow Customization** - Tenant admins definen custom validation phases
+- [ ] **Workflow Customization** - Tenant admins define custom validation phases
 - [ ] **Approval Routing** - Multi-level approval chains
-- [ ] **Compliance Modules** - Templates para SOX, GDPR, etc.
-- [ ] **Multi-tenant Isolation** - Garantizar zero data leakage
-- [ ] **High Availability** - Active-active deployment en multi-regions
+- [ ] **Compliance Modules** - Templates for SOX, GDPR, etc.
+- [ ] **Multi-tenant Isolation** - Ensure zero data leakage
+- [ ] **High Availability** - Active-active deployment in multi-regions
 
-## Autenticación (Demo + Entra-Ready)
+## Authentication (Demo + Entra-Ready)
 
-### Proveedor Activo
-- Por defecto: `AIHUB_AUTH_PROVIDER=demo` (usuarios de prueba locales)
-- Previsión: `AIHUB_AUTH_PROVIDER=entra` para integración con Azure Entra ID (509 Not Implemented hasta completar)
+### Active Provider
+- Default: `AIHUB_AUTH_PROVIDER=demo` (local test users)
+- Planned: `AIHUB_AUTH_PROVIDER=entra` for Azure Entra ID integration (509 Not Implemented until completion)
 
-### Usuarios de Demo
-| Usuario | Contraseña | Rol | Acceso |
-|---------|-----------|-----|--------|
+### Demo Users
+| User | Password | Role | Access |
+|------|----------|------|--------|
 | `analista.finanzas` | `Demo1234!` | Business Analyst | Intake, My Ideas, Validation Queue |
 | `analista.riesgo` | `Demo1234!` | Business Analyst | Intake, My Ideas, Validation Queue |
 | `analista.tecnologia` | `Demo1234!` | **Technical Reviewer** | Technical Queue, Economic Gate, Rejection |
 | `admin.valuehub` | `Demo1234!` | Admin | Admin Panel, Context Manager, Executive Dashboard |
 
-### Endpoints de Autenticación
+### Authentication Endpoints
 - `POST /auth/login` - Obtain JWT token
 - `GET /auth/me` - Get current user profile
 - `GET /ideas/mine` - Get user's ideas
 
-### Flujo de Autenticación
-1. Login con usuario/contraseña
-2. Backend valida y devuelve JWT token
-3. Frontend almacena token en localStorage
-4. Todas las peticiones subsecuentes incluyen token en Authorization header
-5. Sesión se sincroniza cada 10s con polling para status updates
+### Authentication Flow
+1. Login with user/password
+2. Backend validates and returns JWT token
+3. Frontend stores token in localStorage
+4. All subsequent requests include token in Authorization header
+5. Session syncs every 10s with polling for status updates
 
-## 📁 Estructura del Proyecto
+## 📁 Project Structure
 
 ```
 ai-opportunity-hub/
 ├── api/                           # Backend FastAPI
 │   ├── app/
-│   │   ├── main.py               # REST API con 30+ endpoints
-│   │   ├── models.py             # Pydantic models para request/response
+│   │   ├── main.py               # REST API with 30+ endpoints
+│   │   ├── models.py             # Pydantic models for request/response
 │   │   ├── matching_service.py   # Semantic duplicate detection engine
 │   │   ├── value_economics.py    # Economic viability analysis
 │   │   ├── pdf_service.py        # Architecture package PDF generation
@@ -244,9 +244,9 @@ ai-opportunity-hub/
 └── README.md
 ```
 
-### Componentes Clave
+### Key Components
 
-| Componente | Responsabilidad | Tech Stack |
+| Component | Responsibility | Tech Stack |
 |-----------|----------------|-----------|
 | **REST API** | 30+ endpoints, JWT auth, business logic | FastAPI, Pydantic, SQLite |
 | **Semantic Matching** | 4-strategy duplicate detection with synonyms | Python regex + difflib |
@@ -257,59 +257,59 @@ ai-opportunity-hub/
 
 ---
 
-## 🚀 Ejecutar Localmente (Desarrollo)
+## 🚀 Local Development Setup
 
-### Requisitos
-- Python 3.11+ con pip
-- Node.js 18+ con npm
-- Terminal PowerShell (Windows) o bash (Mac/Linux)
+### Requirements
+- Python 3.11+ with pip
+- Node.js 18+ with npm
+- PowerShell (Windows) or bash (Mac/Linux)
 
-### Pasos de Setup
+### Setup Steps
 
-**1. Clonar repositorio**
+**1. Clone Repository**
 ```bash
 git clone https://github.com/makanto32/AI-Opportunity-Hub.git
 cd AI-Opportunity-Hub
 ```
 
-**2. Configurar Python Environment**
+**2. Configure Python Environment**
 ```bash
-# Crear virtual environment
+# Create virtual environment
 python -m venv .venv
 
-# Activar (Windows PowerShell)
+# Activate (Windows PowerShell)
 & .\.venv\Scripts\Activate.ps1
 
-# Activar (Mac/Linux)
+# Activate (Mac/Linux)
 source .venv/bin/activate
 
-# Instalar dependencias
+# Install dependencies
 cd api
 pip install -r requirements.txt
 ```
 
-**3. Ejecutar Backend (FastAPI)**
+**3. Run Backend (FastAPI)**
 ```bash
-# Desde carpeta api/
+# From api folder
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-# En otra terminal:
-# Backend corriendo en http://127.0.0.1:8000
-# Swagger API docs en http://127.0.0.1:8000/docs
+# In another terminal:
+# Backend running at http://127.0.0.1:8000
+# Swagger API docs at http://127.0.0.1:8000/docs
 ```
 
-**4. Ejecutar Frontend (React + Vite)**
+**4. Run Frontend (React + Vite)**
 ```bash
-# Desde carpeta frontend/
+# From frontend folder
 npm install
 npm run dev
 
-# Frontend corriendo en http://localhost:5173
-# O usar .env.local para API remota:
+# Frontend running at http://localhost:5173
+# Or use .env.local for remote API:
 # VITE_API_URL=http://127.0.0.1:8000
 ```
 
-**5. Acceder a la Aplicación**
+**5. Access Application**
 - **Frontend**: http://localhost:5173/
 - **API Docs (Swagger)**: http://127.0.0.1:8000/docs
 - **Demo Users**:
@@ -319,39 +319,63 @@ npm run dev
 
 ### Troubleshooting
 
-| Problema | Solución |
-|----------|----------|
-| **API no responde** | Verificar `uvicorn` está corriendo en puerto 8000 |
-| **Frontend conecta a Azure API** | Verificar `.env.local` tiene `VITE_API_URL=http://127.0.0.1:8000` |
-| **Login falla** | Verificar usuario/contraseña coincide con tabla anterior (case-sensitive) |
-| **CORS errors** | Verificar CORS middleware en `api/app/main.py` permite `http://localhost:5173` |
+| Problem | Solution |
+|---------|----------|
+| **API not responding** | Verify `uvicorn` is running on port 8000 |
+| **Frontend connects to Azure API** | Verify `.env.local` has `VITE_API_URL=http://127.0.0.1:8000` |
+| **Login fails** | Verify user/password matches table above (case-sensitive) |
+| **CORS errors** | Verify CORS middleware in `api/app/main.py` allows `http://localhost:5173` |
 
 ---
 
-## 📚 Documentación
+## 📚 Documentation
 
-### Guías de Referencia
-- **[CLIENT_ARCHITECTURE_REFERENCE.md](docs/CLIENT_ARCHITECTURE_REFERENCE.md)** - Diagrama y descripción arquitectónica para equipos de desarrollo
-- **[FABRIC_MEDALLION_SEMANTIC_SETUP.md](docs/FABRIC_MEDALLION_SEMANTIC_SETUP.md)** - Setup de Microsoft Fabric para Executive Dashboard
-- **[INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md)** - Guía de despliegue en Azure Container Apps
-- **[MVP_IMPLEMENTATION_LOG.md](docs/MVP_IMPLEMENTATION_LOG.md)** - Changelog detallado de implementaciones
+### Reference Guides
+- **[CLIENT_ARCHITECTURE_REFERENCE.md](docs/CLIENT_ARCHITECTURE_REFERENCE.md)** - Architectural diagram and description for development teams
+- **[FABRIC_MEDALLION_SEMANTIC_SETUP.md](docs/FABRIC_MEDALLION_SEMANTIC_SETUP.md)** - Microsoft Fabric setup for Executive Dashboard
+- **[INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md)** - Deployment guide for Azure Container Apps
+- **[MVP_IMPLEMENTATION_LOG.md](docs/MVP_IMPLEMENTATION_LOG.md)** - Detailed changelog of implementations
 
 ---
 
-## 🤝 Contribución & Desarrollo
+## 🤝 Contribution & Development
 
-### Para Equipos de Desarrollo
-Este repositorio está diseñado para ser:
-1. **Claro y Limpio**: Código modular, endpoints documentados, naming conventions consistentes
-2. **Extensible**: Arquitectura SOLID, services desacoplados, fácil agregar nuevas fases/roles
-3. **Production-Ready**: Error handling robusto, logging, validación de entrada, CORS configurado
-4. **Well-Tested**: Test cases incluidos para matching service, economics engine, y workflows críticos
+### For Development Teams
+This repository is designed to be:
+1. **Clean and Clear**: Modular code, documented endpoints, consistent naming conventions
+2. **Extensible**: SOLID architecture, decoupled services, easy to add new phases/roles
+3. **Production-Ready**: Robust error handling, logging, input validation, CORS configured
+4. **Well-Tested**: Test cases included for matching service, economics engine, and critical workflows
 
-### Para Agregar Funcionalidades
-1. Revisar `docs/Roadmap (Not yet implemented)` para prioridades
-2. Crear rama: `git checkout -b feature/nombre-funcionalidad`
-3. Implementar en backend (`api/app/`) y frontend (`frontend/src/`) según corresponda
-4. Validar con casos de prueba
+### To Add Features
+1. Review `docs/Roadmap (Not yet implemented)` for priorities
+2. Create branch: `git checkout -b feature/feature-name`
+3. Implement in backend (`api/app/`) and frontend (`frontend/src/`) as needed
+4. Validate with test cases
+5. Push to GitHub and create Pull Request with clear description
+
+### Naming Structure
+- **Files**: snake_case (e.g., `matching_service.py`)
+- **Functions**: snake_case (e.g., `find_related_initiatives()`)
+- **Classes**: PascalCase (e.g., `IdeaCase`, `ValueEconomics`)
+- **Constants**: UPPER_SNAKE_CASE (e.g., `SEMANTIC_SYNONYMS`)
+
+---
+
+## 📄 License
+This project is licensed under **MIT License**. See [LICENSE](LICENSE) for full details.
+
+## 👥 Contact & Support
+For technical questions, issues, or feature proposals:
+1. Create a [GitHub Issue](https://github.com/makanto32/AI-Opportunity-Hub/issues)
+2. Describe the problem/feature with clear context
+3. Include reproduction steps (if bug) or use cases (if feature)
+
+---
+
+**Last Updated**: August 2026  
+**Status**: MVP2 Complete ✅ | Phase 3 (Production) In Progress  
+**Maintainers**: Development Team
 5. Push a GitHub y crear Pull Request con descripción clara
 
 ### Estructura de Naming
