@@ -1,0 +1,3 @@
+tenant_id,duplicates_avoided_percentage,retwork_reduction_percentage,collaborator_participation_rate,ai_adoption_rate,ideas_in_production,estimated_annual_value,estimated_annual_value_generated,roi_percentage,generated_at
+contoso-demo,59.523809523809526,70.23809523809524,20.0,21.428571428571427,6,373600.0,553200.0,453.2,2026-08-03T19:06:19.347219
+roundtrip-tenant,0.0,100.0,20.0,0.0,0,0.0,0.0,-100.0,2026-08-03T19:06:19.348332

@@ -1,0 +1,308 @@
+{
+  "contoso-demo": {
+    "tenant_id": "contoso-demo",
+    "period": "current",
+    "duplicates_avoided_percentage": 59.523809523809526,
+    "retwork_reduction_percentage": 70.23809523809524,
+    "collaborator_participation_rate": 20.0,
+    "ai_adoption_rate": 21.428571428571427,
+    "duplication_metrics": {
+      "total_ideas_submitted": 42,
+      "duplicates_detected": 25,
+      "duplicates_avoided_cost": 50000.0,
+      "duplicate_detection_rate": 59.523809523809526,
+      "avg_similarity_score": 20.189816342809767,
+      "duplicates_by_domain": {
+        "Detección de": 3,
+        "KYC Automation": 3,
+        "Análisis de": 3,
+        "Optimización de": 2,
+        "Automatización de": 4,
+        "Chatbot de": 2,
+        "Análisis Predictivo": 2,
+        "Reducir fraude": 2,
+        "Deteccion temprana": 2,
+        "Deteccion inteligente": 2
+      }
+    },
+    "adoption_metrics": {
+      "ideas_using_ai_validation": 9,
+      "ideas_total": 42,
+      "ai_adoption_rate": 21.428571428571427,
+      "agent_assisted_validations": 14,
+      "avg_agent_questions_per_idea": 0.5,
+      "common_validation_patterns": [
+        "No patterns yet"
+      ]
+    },
+    "production_metrics": {
+      "ideas_in_production": 6,
+      "estimated_annual_value": 373600.0,
+      "estimated_annual_savings": 129600.0,
+      "estimated_hours_saved_annually": 864.0,
+      "top_performing_ideas": [
+        {
+          "idea_id": "23a0f11c-f83e-4e7a-83f5-588846130381",
+          "title": "Sistema Inteligente de Detección de Fraude en Transacciones",
+          "estimated_annual_value": 76000.0,
+          "deployment_status": "production"
+        },
+        {
+          "idea_id": "b01ffe1a-c6f7-4838-a1c8-df89f134a263",
+          "title": "Automatización de Onboarding Digital con Captura de Documentos",
+          "estimated_annual_value": 70400.0,
+          "deployment_status": "production"
+        },
+        {
+          "idea_id": "9bb14b2e-83a9-477e-9d51-56be77a21d4f",
+          "title": "Análisis Predictivo de Riesgo de Crédito en Onboarding",
+          "estimated_annual_value": 68000.0,
+          "deployment_status": "production"
+        },
+        {
+          "idea_id": "95bb140c-884f-4859-a4e8-3c81febf6fe1",
+          "title": "Deteccion temprana de fraude en onboarding digital",
+          "estimated_annual_value": 55199.99999999999,
+          "deployment_status": "production"
+        },
+        {
+          "idea_id": "55c01784-5a36-4b6f-9a57-5460c292229a",
+          "title": "Early fraud detection in digital onboarding",
+          "estimated_annual_value": 52000.0,
+          "deployment_status": "production"
+        }
+      ],
+      "deployment_success_rate": 14.285714285714285
+    },
+    "roi_metrics": {
+      "total_ai_investment_usd": 100000.0,
+      "monthly_ai_platform_cost": 850.0,
+      "estimated_annual_value_generated": 553200.0,
+      "roi_percentage": 453.2,
+      "payback_period_months": 2.1691973969631237,
+      "investment_breakdown": {
+        "platform_annual": 10200,
+        "consulting_equivalent": 89800
+      },
+      "value_trend_12_months": [
+        3841.6666666666665,
+        7683.333333333333,
+        11525.0,
+        15366.666666666666,
+        19208.333333333336,
+        23050.0,
+        26891.666666666668,
+        30733.333333333332,
+        34575.0,
+        38416.66666666667,
+        42258.33333333333,
+        46100.0
+      ]
+    },
+    "top_collaborators": [
+      {
+        "user_id": "user-fin-01",
+        "display_name": "Ana Finanzas",
+        "ideas_submitted": 20,
+        "ideas_approved": 4,
+        "avg_days_to_approval": 28.75,
+        "participation_rate": 47.61904761904761,
+        "last_submission": "2026-06-18T16:52:04.817359"
+      },
+      {
+        "user_id": "demo-user-001",
+        "display_name": "Demo User",
+        "ideas_submitted": 19,
+        "ideas_approved": 7,
+        "avg_days_to_approval": 10.714285714285714,
+        "participation_rate": 45.23809523809524,
+        "last_submission": "2026-07-28T21:32:04.943403"
+      },
+      {
+        "user_id": "team-riesgo",
+        "display_name": "Carlos Mendez (Risk Team Lead)",
+        "ideas_submitted": 1,
+        "ideas_approved": 1,
+        "avg_days_to_approval": 45.0,
+        "participation_rate": 2.380952380952381,
+        "last_submission": "2026-06-13T22:01:36.679786"
+      },
+      {
+        "user_id": "team-operaciones",
+        "display_name": "Maria Rodriguez (Operations Director)",
+        "ideas_submitted": 1,
+        "ideas_approved": 1,
+        "avg_days_to_approval": 365.0,
+        "participation_rate": 2.380952380952381,
+        "last_submission": "2025-07-28T22:01:36.680535"
+      },
+      {
+        "user_id": "team-seguridad",
+        "display_name": "Roberto Gonzalez (Security Chief)",
+        "ideas_submitted": 1,
+        "ideas_approved": 1,
+        "avg_days_to_approval": 450.0,
+        "participation_rate": 2.380952380952381,
+        "last_submission": "2025-05-04T22:01:36.681294"
+      }
+    ],
+    "monthly_ideas_submitted": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      11,
+      10,
+      19
+    ],
+    "monthly_ideas_approved": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      11
+    ],
+    "monthly_ai_cost": [
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0
+    ],
+    "generated_at": "2026-08-03T19:06:19.344403",
+    "last_updated": "2026-08-03T19:06:19.344412"
+  },
+  "roundtrip-tenant": {
+    "tenant_id": "roundtrip-tenant",
+    "period": "current",
+    "duplicates_avoided_percentage": 0.0,
+    "retwork_reduction_percentage": 100.0,
+    "collaborator_participation_rate": 20.0,
+    "ai_adoption_rate": 0.0,
+    "duplication_metrics": {
+      "total_ideas_submitted": 1,
+      "duplicates_detected": 0,
+      "duplicates_avoided_cost": 0.0,
+      "duplicate_detection_rate": 0.0,
+      "avg_similarity_score": 0.0,
+      "duplicates_by_domain": {}
+    },
+    "adoption_metrics": {
+      "ideas_using_ai_validation": 0,
+      "ideas_total": 1,
+      "ai_adoption_rate": 0.0,
+      "agent_assisted_validations": 0,
+      "avg_agent_questions_per_idea": 0.0,
+      "common_validation_patterns": [
+        "No patterns yet"
+      ]
+    },
+    "production_metrics": {
+      "ideas_in_production": 0,
+      "estimated_annual_value": 0.0,
+      "estimated_annual_savings": 0.0,
+      "estimated_hours_saved_annually": 0.0,
+      "top_performing_ideas": [],
+      "deployment_success_rate": 0.0
+    },
+    "roi_metrics": {
+      "total_ai_investment_usd": 100000.0,
+      "monthly_ai_platform_cost": 850.0,
+      "estimated_annual_value_generated": 0.0,
+      "roi_percentage": -100.0,
+      "payback_period_months": 12.0,
+      "investment_breakdown": {
+        "platform_annual": 10200,
+        "consulting_equivalent": 89800
+      },
+      "value_trend_12_months": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "top_collaborators": [
+      {
+        "user_id": "user-1",
+        "display_name": "User One",
+        "ideas_submitted": 1,
+        "ideas_approved": 0,
+        "avg_days_to_approval": 0.0,
+        "participation_rate": 100.0,
+        "last_submission": "2026-06-01T16:11:44.430739"
+      }
+    ],
+    "monthly_ideas_submitted": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "monthly_ideas_approved": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "monthly_ai_cost": [
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0,
+      850.0
+    ],
+    "generated_at": "2026-08-03T19:06:19.348040",
+    "last_updated": "2026-08-03T19:06:19.348049"
+  }
+}

@@ -18,4 +18,5 @@ coverage/
 .DS_Store
 *.db-shm
 *.db-wal
-data/fabric/
+*.db
+aihub.db*
