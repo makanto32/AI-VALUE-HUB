@@ -5,9 +5,12 @@ import unicodedata
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .blob_storage import upload_context_file as upload_context_file_blob
+from .pdf_service import generate_architecture_pdf
+from .value_economics import build_value_economics
 from .matching_service import (
     find_related_initiatives,
     create_matching_result,
@@ -48,11 +51,14 @@ from .models import (
     TechnicalChatSubmitRequest,
     TechnicalInteraction,
     TechnicalQuestion,
+    TechnicalQueueItem,
+    TechnicalRejectionRequest,
     TechnicalQuestionsResponse,
     TechnicalValidationRequest,
     TechnicalValidationResponse,
     UpsertCompanyContextRequest,
     UserProfile,
+    ValueEconomics,
     new_idea_id,
     # Analytics & Metrics
     ExecutiveDashboardMetrics,
@@ -485,6 +491,149 @@ def _find_active_duplicate_idea(request: BusinessIntakeRequest) -> IdeaCase | No
             return existing
 
     return None
+
+
+DEMO_SAMPLE_IDEA_DEFS: list[dict[str, object]] = [
+    # Spanish Ideas - For Duplicate Detection Demo
+    {
+        "key": "fraud-detection-es",
+        "title": "Automatizacion de Deteccion de Fraude en Transacciones Retail",
+        "problem_statement": (
+            "Actualmente detectamos fraude con reglas estaticas que generan muchos falsos positivos. "
+            "Necesitamos un sistema mas inteligente que se adapte a patrones nuevos."
+        ),
+        "expected_value": "Reducir perdidas por fraude en 35% y mejorar experiencia de cliente reduciendo bloqueos incorrectos.",
+        "affected_users": ["equipos-operaciones", "equipos-seguridad", "clientes-retail"],
+        "source_language": "es",
+    },
+    {
+        "key": "kyc-onboarding-es",
+        "title": "Optimizacion de Procesos KYC con Analisis de Documentos con IA",
+        "problem_statement": (
+            "El proceso de onboarding KYC es manual y toma varios dias, generando abandono de clientes "
+            "y sobrecarga operativa en el equipo de cumplimiento."
+        ),
+        "expected_value": "Reducir el tiempo de onboarding en 60% y liberar horas del equipo de cumplimiento para tareas de mayor valor.",
+        "affected_users": ["equipo-cumplimiento", "equipo-onboarding", "clientes-nuevos"],
+        "source_language": "es",
+    },
+    # Spanish Ideas - For Editing/Making Viable
+    {
+        "key": "customer-churn-es",
+        "title": "Prediccion de Rotacion de Clientes Premium",
+        "problem_statement": (
+            "Perdemos 15% de clientes premium anualmente sin señales de alerta tempranas. "
+            "Necesitamos un modelo predictivo para intervenir a tiempo."
+        ),
+        "expected_value": "Reducir churn en 40%, aumentar LTV de cartera, implementar estrategias de retención efectivas.",
+        "affected_users": ["customer-success", "sales", "analytics"],
+        "source_language": "es",
+    },
+    # English Ideas - For Duplicate Detection Demo
+    {
+        "key": "fraud-detection-en",
+        "title": "Real-Time Fraud Detection in Retail Transactions using AI",
+        "problem_statement": (
+            "Our static rule-based fraud detection generates too many false positives and misses emerging fraud patterns. "
+            "We need an intelligent system that adapts to new threats automatically."
+        ),
+        "expected_value": "Reduce fraud losses by 40%, decrease false positive blocks by 50%, improve customer experience.",
+        "affected_users": ["operations-team", "security-team", "retail-customers"],
+        "source_language": "en",
+    },
+    {
+        "key": "kyc-onboarding-en",
+        "title": "Automated KYC Document Processing with Computer Vision",
+        "problem_statement": (
+            "KYC onboarding is manual and takes 3-5 days, causing customer abandonment and operational bottlenecks "
+            "in the compliance team."
+        ),
+        "expected_value": "Reduce onboarding time by 70%, free up compliance team for high-value tasks, improve compliance accuracy to 99%.",
+        "affected_users": ["compliance-team", "onboarding-team", "new-customers"],
+        "source_language": "en",
+    },
+    # English Ideas - For Editing/Making Viable
+    {
+        "key": "customer-churn-en",
+        "title": "Predictive Analytics for Customer Churn Prevention",
+        "problem_statement": (
+            "We lose 12% of premium customers annually with minimal early warning signals. "
+            "We need a predictive model to identify at-risk customers for proactive retention."
+        ),
+        "expected_value": "Reduce annual churn by 35%, increase customer LTV by 25%, enable targeted retention campaigns.",
+        "affected_users": ["customer-success-team", "sales-team", "product-team"],
+        "source_language": "en",
+    },
+    # Portuguese Ideas - For Language Diversity
+    {
+        "key": "fraud-detection-pt",
+        "title": "Deteccao de Fraude em Tempo Real em Transacoes Retail",
+        "problem_statement": (
+            "Nossas regras estaticas de deteccao geram muitos falsos positivos e nao detectam padroes novos de fraude. "
+            "Precisamos de um sistema inteligente que se adapte automaticamente."
+        ),
+        "expected_value": "Reduzir perdas por fraude em 40%, diminuir bloqueios incorretos em 50%, melhorar experiencia do cliente.",
+        "affected_users": ["equipes-operacoes", "equipes-seguranca", "clientes-varejo"],
+        "source_language": "pt",
+    },
+]
+
+
+def _demo_sample_idea_id(key: str, tenant_id: str) -> str:
+    return f"demo-sample-{key}-{tenant_id}"
+
+
+def _demo_sample_ids_for_tenant(tenant_id: str) -> set[str]:
+    return {_demo_sample_idea_id(str(defn["key"]), tenant_id) for defn in DEMO_SAMPLE_IDEA_DEFS}
+
+
+def _build_demo_sample_idea(defn: dict[str, object], owner: UserProfile) -> IdeaCase:
+    now = datetime.utcnow()
+    source_lang = str(defn.get("source_language", "es"))
+    business_validation = BusinessValidation(
+        value_score=78,
+        risk_score=32,
+        assumptions=["Caso de demostracion para deteccion de duplicidad por contexto"],
+        open_questions=[],
+        context_signals=["idea-demo-duplicidad"],
+        score_breakdown=["Valor de negocio estimado en base a caso de referencia precargado"],
+        recommendation="continue",
+    )
+    return IdeaCase(
+        idea_id=_demo_sample_idea_id(str(defn["key"]), owner.tenant_id),
+        tenant_id=owner.tenant_id,
+        owner_user_id=owner.user_id,
+        owner_display_name=owner.display_name,
+        title=str(defn["title"]),
+        canonical_language=CANONICAL_LANGUAGE,
+        supported_languages=SUPPORTED_LANGUAGES,
+        source_language=source_lang,
+        detected_language=source_lang,
+        response_language=source_lang,
+        original_text=f"{defn['problem_statement']}\n\n{defn['expected_value']}",
+        canonical_summary=f"Problema: {defn['problem_statement']} | Valor esperado: {defn['expected_value']}",
+        current_stage=IdeaStage.technical_validation,
+        status=IdeaStatus.business_viable,
+        problem_statement=str(defn["problem_statement"]),
+        expected_value=str(defn["expected_value"]),
+        affected_users=list(defn["affected_users"]),
+        business_validation=business_validation,
+        context_snapshot=None,
+        technical_questions=[],
+        technical_interactions=[],
+        technical_validation=None,
+        architecture_package=None,
+        response_composition=None,
+        rejection=None,
+        deployment_status=DeploymentStatus.development,
+        monthly_token_quota_base=250000,
+        extra_quota_current_month=0,
+        quota_month="",
+        quota_adjustments=[],
+        clarification_questions=[],
+        created_at=now,
+        updated_at=now,
+    )
 
 
 def _build_context_snapshot(context: CompanyContext) -> ContextSnapshot:
@@ -2310,15 +2459,28 @@ def create_idea(request: BusinessIntakeRequest, current_user: UserProfile = Depe
 
     duplicate = _find_active_duplicate_idea(request)
     if duplicate is not None:
-        duplicate_detail = _msg(
+        duplicate_message = _msg(
             response_language,
             "Ya existe una idea similar en analisis. Revisa las ideas en curso y ajusta el planteamiento antes de registrar una nueva.",
             "A similar idea already exists in analysis. Review ongoing ideas and refine your proposal before submitting a new one.",
             "Ja existe uma ideia similar em analise. Revise as ideias em andamento e ajuste a proposta antes de registrar uma nova.",
         )
+        owner_user = auth_store.get_user_by_id(duplicate.owner_user_id)
+        owner_contact = owner_user.get("email") if owner_user else None
         raise HTTPException(
             status_code=409,
-            detail=duplicate_detail,
+            detail={
+                "message": duplicate_message,
+                "duplicate_idea": {
+                    "idea_id": duplicate.idea_id,
+                    "title": duplicate.title,
+                    "status": duplicate.status,
+                    "current_stage": duplicate.current_stage,
+                    "deployment_status": duplicate.deployment_status,
+                    "owner_display_name": duplicate.owner_display_name,
+                    "owner_contact": owner_contact,
+                },
+            },
         )
 
     validation = _evaluate_idea_with_context(request, context)
@@ -2363,8 +2525,66 @@ def create_idea(request: BusinessIntakeRequest, current_user: UserProfile = Depe
 
 
 @app.get("/ideas", response_model=list[IdeaCase])
-def list_ideas() -> list[IdeaCase]:
-    return idea_store.list_all()
+def list_ideas(
+    deployment_status: DeploymentStatus | None = None,
+    current_user: UserProfile = Depends(get_current_user),
+) -> list[IdeaCase]:
+    ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    if deployment_status is not None:
+        ideas = [idea for idea in ideas if idea.deployment_status == deployment_status]
+    return ideas
+
+
+@app.get("/ideas/demo-samples", response_model=list[IdeaCase])
+def list_demo_sample_ideas(current_user: UserProfile = Depends(get_current_user)) -> list[IdeaCase]:
+    valid_ids = _demo_sample_ids_for_tenant(current_user.tenant_id)
+    return [idea for idea in idea_store.list_by_tenant(current_user.tenant_id) if idea.idea_id in valid_ids]
+
+
+@app.post("/ideas/demo-samples/seed", response_model=list[IdeaCase])
+def seed_demo_sample_ideas(current_user: UserProfile = Depends(get_current_user)) -> list[IdeaCase]:
+    seeded: list[IdeaCase] = []
+    for defn in DEMO_SAMPLE_IDEA_DEFS:
+        idea = _build_demo_sample_idea(defn, current_user)
+        seeded.append(idea_store.save(idea))
+    return seeded
+
+
+@app.delete("/ideas/demo-samples/{idea_id}", response_model=MessageResponse)
+def delete_demo_sample_idea(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> MessageResponse:
+    valid_ids = _demo_sample_ids_for_tenant(current_user.tenant_id)
+    if idea_id not in valid_ids:
+        raise HTTPException(status_code=400, detail="El identificador no corresponde a una idea de demostracion valida")
+
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes eliminar ideas de otro tenant")
+
+    idea_store.delete(idea_id)
+    return MessageResponse(message=f"Idea demo {idea_id} eliminada exitosamente")
+
+
+@app.delete("/ideas/{idea_id}", response_model=MessageResponse)
+def delete_my_idea(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> MessageResponse:
+    """Delete an idea owned by the current user."""
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes eliminar ideas de otro tenant")
+    if idea.owner_user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="No puedes eliminar ideas de otro usuario")
+
+    idea_store.delete(idea_id)
+    return MessageResponse(message=f"Idea {idea_id} eliminada exitosamente")
 
 
 @app.get("/ideas/mine", response_model=list[IdeaCase])
@@ -2380,6 +2600,66 @@ def list_my_ideas(current_user: UserProfile = Depends(get_current_user)) -> list
     if updated:
         return idea_store.list_by_owner(current_user.user_id)
     return ideas
+
+
+@app.get("/ideas/technical-queue", response_model=list[TechnicalQueueItem])
+def get_technical_queue(current_user: UserProfile = Depends(get_current_user)) -> list[TechnicalQueueItem]:
+    """Get all ideas in technical validation queue (business_viable + technical_validation stage)."""
+    if current_user.role != "technical":
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden acceder a la cola tecnica")
+    
+    # Get all ideas from the same tenant
+    all_ideas = idea_store.list_by_tenant(current_user.tenant_id)
+    
+    # Filter for ideas in technical validation queue:
+    # - status must be business_viable
+    # - current_stage must be technical_validation
+    queue = [
+        idea for idea in all_ideas
+        if idea.status == IdeaStatus.business_viable 
+        and idea.current_stage == IdeaStage.technical_validation
+    ]
+    
+    # Ensure all ideas have technical chat ready
+    updated = False
+    for index, idea in enumerate(queue):
+        ready_idea, changed = _ensure_technical_chat_ready(idea)
+        queue[index] = ready_idea
+        if changed:
+            idea_store.save(ready_idea)
+            updated = True
+    
+    if updated:
+        all_ideas = idea_store.list_by_tenant(current_user.tenant_id)
+        queue = [
+            idea for idea in all_ideas
+            if idea.status == IdeaStatus.business_viable 
+            and idea.current_stage == IdeaStage.technical_validation
+        ]
+    
+    return [
+        TechnicalQueueItem(idea=idea, value_economics=build_value_economics(idea))
+        for idea in queue
+    ]
+
+
+@app.get("/ideas/{idea_id}/value-economics", response_model=ValueEconomics)
+def get_idea_value_economics(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> ValueEconomics:
+    """Compare estimated monthly consumption cost against quantified business value."""
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes consultar ideas de otro tenant")
+
+    is_owner = idea.owner_user_id == current_user.user_id
+    if not is_owner and current_user.role not in ("technical", "admin"):
+        raise HTTPException(status_code=403, detail="No tienes permisos para consultar esta idea")
+
+    return build_value_economics(idea)
 
 
 @app.get("/ideas/{idea_id}", response_model=IdeaCase)
@@ -2799,6 +3079,177 @@ def generate_architecture_package(
         idea_id=updated.idea_id,
         architecture_package=updated.architecture_package,
         response_composition=updated.response_composition,
+    )
+
+
+# ===================== ENDPOINTS TECNICOS (TECHNICAL VALIDATION) =====================
+
+@app.post("/ideas/{idea_id}/technical-approval", response_model=IdeaCase)
+def technical_approval(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> IdeaCase:
+    """Approve an idea at technical level and generate architecture package."""
+    if current_user.role != "technical":
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden aprobar ideas")
+    
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes aprobar ideas de otro tenant")
+    
+    # Verify idea is in technical validation queue
+    if idea.status != IdeaStatus.business_viable:
+        raise HTTPException(status_code=400, detail="La idea debe tener status 'business_viable'")
+    if idea.current_stage != IdeaStage.technical_validation:
+        raise HTTPException(status_code=400, detail="La idea debe estar en etapa 'technical_validation'")
+    
+    # Generate architecture package if not already exists
+    if idea.architecture_package is None:
+        if idea.technical_validation is None:
+            raise HTTPException(status_code=400, detail="Primero debes completar la validacion tecnica")
+        if len(idea.technical_interactions) == 0:
+            raise HTTPException(status_code=400, detail="Debes completar el chat tecnico guiado antes de generar arquitectura")
+        if idea.technical_validation.recommendation == "stop":
+            raise HTTPException(status_code=400, detail="La validacion tecnica no fue aprobada para arquitectura")
+        
+        idea.architecture_package = _build_architecture_package(idea)
+        composed_message, next_actions = _compose_architecture_message(idea)
+        idea.response_composition = {
+            "language": idea.response_language,
+            "message": composed_message,
+            "next_actions": next_actions,
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+    
+    return idea_store.save(idea)
+
+
+@app.post("/ideas/{idea_id}/technical-rejection", response_model=IdeaCase)
+def technical_rejection(
+    idea_id: str,
+    request: TechnicalRejectionRequest,
+    current_user: UserProfile = Depends(get_current_user),
+) -> IdeaCase:
+    """Reject an idea at technical level."""
+    if current_user.role != "technical":
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden rechazar ideas")
+
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes rechazar ideas de otro tenant")
+    if idea.status == IdeaStatus.rejected:
+        raise HTTPException(status_code=400, detail="La idea ya fue rechazada")
+
+    idea.status = IdeaStatus.rejected
+    idea.rejection = RejectionInfo(phase=RejectionPhase.technical, reason=request.reason)
+    return idea_store.save(idea)
+
+
+@app.patch("/ideas/{idea_id}/move-to-funding", response_model=IdeaCase)
+def move_to_funding(
+    idea_id: str,
+    override_economics: bool = False,
+    current_user: UserProfile = Depends(get_current_user),
+) -> IdeaCase:
+    """Move an idea to funding status (requires technical approval first)."""
+    if current_user.role != "technical":
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden mover ideas")
+    
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes modificar ideas de otro tenant")
+    
+    # Verify idea has architecture package
+    if idea.architecture_package is None:
+        raise HTTPException(status_code=400, detail="La idea debe tener un paquete de arquitectura antes de pasar a funding")
+
+    # Economic gate: consumption cost must not outweigh the quantified business value.
+    economics = build_value_economics(idea)
+    if not override_economics and economics.verdict in ("unfavorable", "marginal", "needs_quantification"):
+        raise HTTPException(status_code=409, detail=economics.message)
+    
+    idea.deployment_status = DeploymentStatus.funding
+    return idea_store.save(idea)
+
+
+@app.patch("/ideas/{idea_id}/move-to-development", response_model=IdeaCase)
+def move_to_development(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> IdeaCase:
+    """Move an idea to development status."""
+    if current_user.role != "technical":
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden mover ideas")
+    
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes modificar ideas de otro tenant")
+    
+    # Verify idea has architecture package
+    if idea.architecture_package is None:
+        raise HTTPException(status_code=400, detail="La idea debe tener un paquete de arquitectura antes de pasar a desarrollo")
+    
+    idea.deployment_status = DeploymentStatus.development
+    return idea_store.save(idea)
+
+
+@app.patch("/ideas/{idea_id}/move-to-production", response_model=IdeaCase)
+def move_to_production(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> IdeaCase:
+    """Move an idea to production status."""
+    if current_user.role != "technical":
+        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden mover ideas")
+    
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes modificar ideas de otro tenant")
+    
+    # Verify idea has architecture package
+    if idea.architecture_package is None:
+        raise HTTPException(status_code=400, detail="La idea debe tener un paquete de arquitectura antes de pasar a produccion")
+    
+    idea.deployment_status = DeploymentStatus.production
+    return idea_store.save(idea)
+
+
+@app.get("/ideas/{idea_id}/architecture-package-pdf")
+def download_architecture_package_pdf(
+    idea_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+):
+    """Download architecture package as a professional PDF document."""
+    idea = idea_store.get(idea_id)
+    if idea is None:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    if idea.tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes descargar ideas de otro tenant")
+
+    is_owner = idea.owner_user_id == current_user.user_id
+    if not is_owner and current_user.role not in ("technical", "admin"):
+        raise HTTPException(status_code=403, detail="No tienes permisos para descargar este paquete")
+
+    if idea.architecture_package is None:
+        raise HTTPException(status_code=400, detail="La idea no tiene un paquete de arquitectura generado")
+
+    pdf_buffer = generate_architecture_pdf(idea)
+    filename = f"architecture-package-{idea.idea_id}.pdf"
+
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

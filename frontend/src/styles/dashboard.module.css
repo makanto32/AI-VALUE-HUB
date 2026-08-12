@@ -94,6 +94,62 @@
   margin-top: 6px;
 }
 
+/* Metric provenance tooltips */
+.tooltipHost {
+  position: relative;
+  cursor: help;
+}
+
+.tooltipHost::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 300px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.28);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.tooltipHost::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #0f172a;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.tooltipHost:hover::after,
+.tooltipHost:focus-visible::after,
+.tooltipHost:hover::before,
+.tooltipHost:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Sections */
 .section {
   background: white;

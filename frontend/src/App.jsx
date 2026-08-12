@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ExecutiveDashboard from "./pages/ExecutiveDashboard";
+import DemoIdeasCatalog from "./components/DemoIdeasCatalog";
+import ProductionIdeasCatalog from "./components/ProductionIdeasCatalog";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://aihub-api-dev.yellowwave-f693504a.eastus.azurecontainerapps.io";
 const AUTH_KEY = "aihub_demo_token";
@@ -218,6 +220,18 @@ const uiText = {
     adminAvgCycleHours: "Ciclo promedio (horas)",
     adminTopComponents: "Componentes mas frecuentes",
     adminNoComponentData: "Sin datos de componentes aun",
+    helpAdminTotalIdeas: "Conteo de todas las ideas registradas para el tenant, en cualquier estado o etapa.",
+    helpAdminApprovalRate: "Formula: casos de uso aprobados / ideas totales x 100. Un caso de uso aprobado es una idea viable de negocio que completo validacion tecnica y tiene paquete de arquitectura.",
+    helpAdminTechnicalPassRate: "Formula: ideas con validacion tecnica cuya recomendacion no es 'stop' / ideas viables de negocio x 100.",
+    helpAdminAvgFeasibility: "Promedio del score de factibilidad tecnica (0-100) de las ideas que ya cuentan con validacion tecnica.",
+    helpAdminAvgCycleHours: "Promedio de horas entre la creacion de la idea y la generacion de su paquete de arquitectura.",
+    helpAdminTopComponents: "Frecuencia con que cada componente aparece en los paquetes de arquitectura generados, incluyendo el catalogo sugerido. Se muestran los 5 mas repetidos.",
+    helpAdminQuotaTotal: "Cuota base mensual de la aplicacion mas la cuota extra aprobada para el mes en curso.",
+    helpAdminQuotaConsumed: "Tokens consumidos en el mes en curso por la aplicacion en produccion.",
+    helpAdminQuotaRemaining: "Cuota total menos consumo del mes. El porcentaje del encabezado es consumo sobre cuota total.",
+    helpAdminEstimatedCost: "Costo mensual estimado tomado del paquete de arquitectura; si no existe, se calcula con la estimacion de tokens de la idea.",
+    helpAdminTokenCost: "Tokens de prompt y de completion acumulados de los casos de uso aprobados, valorizados con las tarifas de la plataforma.",
+    helpAdminProjectsInProduction: "Aplicaciones cuyo estado de despliegue es produccion y que por tanto consumen cuota mensual.",
     adminDeploymentStatus: "Estado de despliegue",
     adminDeploymentDevelopment: "Desarrollo",
     adminDeploymentFunding: "Funding",
@@ -231,9 +245,39 @@ const uiText = {
     focusedIdeaTitle: "Idea en primer plano",
     removeFocus: "Quitar foco",
     viewInFocus: "Ver en primer plano",
+    deleteIdea: "Eliminar idea",
+    deleteIdeaConfirm: "¿Estás seguro de que deseas eliminar esta idea? Esta acción no se puede deshacer.",
+    deleteIdeaSuccess: "Idea eliminada correctamente",
+    deleteIdeaError: "Error al eliminar la idea",
+    technicalQueue: "Cola técnica",
+    technicalValidation: "Validacion tecnica",
+    technicalReviewPending: "En revisión técnica",
+    technicalApprove: "Aprobar",
+    moveToFunding: "Pasar a funding",
+    moveToDevelopment: "Pasar a desarrollo",
+    moveToProduction: "Pasar a produccion",
+    downloadArchitecturePdf: "Descargar arquitectura (PDF)",
+    technicalReject: "Rechazar idea",
+    rejectIdeaPrompt: "Indica el motivo tecnico del rechazo (minimo 5 caracteres):",
+    economicsMonthlyCost: "Consumo mensual estimado",
+    economicsMonthlySavings: "Ahorro mensual estimado",
+    economicsRatio: "Valor / costo",
+    economicsNetMonthly: "Beneficio neto mensual",
+    economicsAssumptions: "Supuestos del calculo",
+    economicsOverrideConfirm: "Deseas continuar de todos modos y pasar la idea a funding?",
+    economicsVerdict: {
+      favorable: "Relacion favorable",
+      acceptable: "Relacion aceptable",
+      marginal: "Relacion marginal",
+      unfavorable: "Consumo mayor al valor",
+      needs_quantification: "Falta cuantificar el valor",
+      insufficient_data: "Sin estimacion de consumo",
+    },
+    lastUpdated: "Ultima actualizacion",
     componentsLabel: "Componentes",
     demoUser1: "Demo usuario 1: analista.finanzas / Demo1234!",
     demoUser2: "Demo usuario 2: analista.riesgo / Demo1234!",
+    demoUserTech: "Demo tecnico: analista.tecnologia / Demo1234!",
     demoAdmin: "Demo admin: admin.valuehub / Demo1234!",
     noFilesSelected: "No hay archivos seleccionados.",
     tenantNoContext: "Este tenant aun no tiene contexto base. Completa el formulario y guarda.",
@@ -258,6 +302,10 @@ const uiText = {
     errorContextFiles: "Error cargando archivos de contexto",
     errorMustRegisterContext: "Primero debes registrar el contexto base del tenant para evaluar la idea.",
     errorCreateIdea: "No fue posible crear la idea",
+    duplicateWarningTitle: "Posible idea duplicada detectada",
+    duplicateWarningIdea: "Idea existente",
+    duplicateWarningStatus: "Estado",
+    duplicateWarningContactLabel: "Contacto del responsable",
     riskLow: "baja",
     riskMedium: "media",
     riskHigh: "alta",
@@ -307,6 +355,7 @@ const uiText = {
     sourceLanguage: "Source language",
     saveIdea: "Create and validate",
     savingIdea: "Saving...",
+    clearForm: "Clear",
     myIdeasSubtitle: "You only see ideas created in your session. Includes rejection phase and reason.",
     statusDetail: "Status",
     stageIdeaIntake: "Idea intake",
@@ -419,6 +468,18 @@ const uiText = {
     adminAvgCycleHours: "Average cycle (hours)",
     adminTopComponents: "Most frequent components",
     adminNoComponentData: "No component data yet",
+    helpAdminTotalIdeas: "Count of every idea registered for the tenant, in any status or stage.",
+    helpAdminApprovalRate: "Formula: approved use cases / total ideas x 100. An approved use case is a business viable idea that completed technical validation and has an architecture package.",
+    helpAdminTechnicalPassRate: "Formula: ideas with technical validation whose recommendation is not 'stop' / business viable ideas x 100.",
+    helpAdminAvgFeasibility: "Average technical feasibility score (0-100) across ideas that already have a technical validation.",
+    helpAdminAvgCycleHours: "Average hours between idea creation and the generation of its architecture package.",
+    helpAdminTopComponents: "How often each component appears across generated architecture packages, including the suggested catalog. Top 5 shown.",
+    helpAdminQuotaTotal: "Monthly base quota of the application plus the extra quota approved for the current month.",
+    helpAdminQuotaConsumed: "Tokens consumed during the current month by the application in production.",
+    helpAdminQuotaRemaining: "Total quota minus monthly consumption. The header percentage is consumption over total quota.",
+    helpAdminEstimatedCost: "Estimated monthly cost taken from the architecture package; if missing, it is computed from the idea token estimate.",
+    helpAdminTokenCost: "Accumulated prompt and completion tokens of approved use cases, priced with the platform rates.",
+    helpAdminProjectsInProduction: "Applications whose deployment status is production and therefore consume monthly quota.",
     adminDeploymentStatus: "Deployment status",
     adminDeploymentDevelopment: "Development",
     adminDeploymentFunding: "Funding",
@@ -432,9 +493,39 @@ const uiText = {
     focusedIdeaTitle: "Focused idea",
     removeFocus: "Remove focus",
     viewInFocus: "View in focus",
+    deleteIdea: "Delete idea",
+    deleteIdeaConfirm: "Are you sure you want to delete this idea? This action cannot be undone.",
+    deleteIdeaSuccess: "Idea deleted successfully",
+    deleteIdeaError: "Error deleting idea",
+    technicalQueue: "Technical Queue",
+    technicalValidation: "Technical Validation",
+    technicalReviewPending: "Under technical review",
+    technicalApprove: "Approve",
+    moveToFunding: "Move to funding",
+    moveToDevelopment: "Move to development",
+    moveToProduction: "Move to production",
+    downloadArchitecturePdf: "Download architecture (PDF)",
+    technicalReject: "Reject idea",
+    rejectIdeaPrompt: "Provide the technical rejection reason (minimum 5 characters):",
+    economicsMonthlyCost: "Estimated monthly consumption",
+    economicsMonthlySavings: "Estimated monthly savings",
+    economicsRatio: "Value / cost",
+    economicsNetMonthly: "Net monthly benefit",
+    economicsAssumptions: "Calculation assumptions",
+    economicsOverrideConfirm: "Do you want to continue anyway and move the idea to funding?",
+    economicsVerdict: {
+      favorable: "Favorable ratio",
+      acceptable: "Acceptable ratio",
+      marginal: "Marginal ratio",
+      unfavorable: "Cost exceeds value",
+      needs_quantification: "Value not quantified",
+      insufficient_data: "No consumption estimate",
+    },
+    lastUpdated: "Last updated",
     componentsLabel: "Components",
     demoUser1: "Demo user 1: analista.finanzas / Demo1234!",
     demoUser2: "Demo user 2: analista.riesgo / Demo1234!",
+    demoUserTech: "Demo technical: analista.tecnologia / Demo1234!",
     demoAdmin: "Demo admin: admin.valuehub / Demo1234!",
     noFilesSelected: "No files selected.",
     tenantNoContext: "This tenant has no baseline context yet. Complete and save the form.",
@@ -459,6 +550,10 @@ const uiText = {
     errorContextFiles: "Error uploading context files",
     errorMustRegisterContext: "You must register tenant baseline context before evaluating an idea.",
     errorCreateIdea: "Could not create idea",
+    duplicateWarningTitle: "Possible duplicate idea detected",
+    duplicateWarningIdea: "Existing idea",
+    duplicateWarningStatus: "Status",
+    duplicateWarningContactLabel: "Owner contact",
     riskLow: "low",
     riskMedium: "medium",
     riskHigh: "high",
@@ -508,6 +603,7 @@ const uiText = {
     sourceLanguage: "Idioma de origem",
     saveIdea: "Criar e validar",
     savingIdea: "Salvando...",
+    clearForm: "Limpar",
     myIdeasSubtitle: "Voce so ve ideias criadas na sua sessao. Inclui fase e motivo de rejeicao.",
     statusDetail: "Status",
     stageIdeaIntake: "Intake da ideia",
@@ -620,6 +716,18 @@ const uiText = {
     adminAvgCycleHours: "Ciclo medio (horas)",
     adminTopComponents: "Componentes mais frequentes",
     adminNoComponentData: "Sem dados de componentes ainda",
+    helpAdminTotalIdeas: "Contagem de todas as ideias registradas para o tenant, em qualquer status ou etapa.",
+    helpAdminApprovalRate: "Formula: casos de uso aprovados / total de ideias x 100. Um caso de uso aprovado e uma ideia viavel de negocio que completou a validacao tecnica e possui pacote de arquitetura.",
+    helpAdminTechnicalPassRate: "Formula: ideias com validacao tecnica cuja recomendacao nao e 'stop' / ideias viaveis de negocio x 100.",
+    helpAdminAvgFeasibility: "Media do score de viabilidade tecnica (0-100) das ideias que ja possuem validacao tecnica.",
+    helpAdminAvgCycleHours: "Media de horas entre a criacao da ideia e a geracao do seu pacote de arquitetura.",
+    helpAdminTopComponents: "Frequencia com que cada componente aparece nos pacotes de arquitetura gerados, incluindo o catalogo sugerido. Sao exibidos os 5 mais repetidos.",
+    helpAdminQuotaTotal: "Cota base mensal da aplicacao mais a cota extra aprovada para o mes corrente.",
+    helpAdminQuotaConsumed: "Tokens consumidos no mes corrente pela aplicacao em producao.",
+    helpAdminQuotaRemaining: "Cota total menos o consumo do mes. O percentual do cabecalho e consumo sobre cota total.",
+    helpAdminEstimatedCost: "Custo mensal estimado obtido do pacote de arquitetura; se nao existir, e calculado com a estimativa de tokens da ideia.",
+    helpAdminTokenCost: "Tokens de prompt e de completion acumulados dos casos de uso aprovados, precificados com as tarifas da plataforma.",
+    helpAdminProjectsInProduction: "Aplicacoes cujo status de implantacao e producao e que portanto consomem cota mensal.",
     adminDeploymentStatus: "Estado de deploy",
     adminDeploymentDevelopment: "Desenvolvimento",
     adminDeploymentFunding: "Funding",
@@ -634,9 +742,39 @@ const uiText = {
     focusedIdeaTitle: "Ideia em foco",
     removeFocus: "Remover foco",
     viewInFocus: "Ver em foco",
+    deleteIdea: "Eliminar ideia",
+    deleteIdeaConfirm: "Tem certeza de que deseja eliminar esta ideia? Esta ação não pode ser desfeita.",
+    deleteIdeaSuccess: "Ideia eliminada com sucesso",
+    deleteIdeaError: "Erro ao eliminar ideia",
+    technicalQueue: "Fila tecnica",
+    technicalValidation: "Validacao tecnica",
+    technicalReviewPending: "Em revisao tecnica",
+    technicalApprove: "Aprovar",
+    moveToFunding: "Mover para funding",
+    moveToDevelopment: "Mover para desenvolvimento",
+    moveToProduction: "Mover para producao",
+    downloadArchitecturePdf: "Baixar arquitetura (PDF)",
+    technicalReject: "Rejeitar ideia",
+    rejectIdeaPrompt: "Informe o motivo tecnico da rejeicao (minimo 5 caracteres):",
+    economicsMonthlyCost: "Consumo mensal estimado",
+    economicsMonthlySavings: "Economia mensal estimada",
+    economicsRatio: "Valor / custo",
+    economicsNetMonthly: "Beneficio liquido mensal",
+    economicsAssumptions: "Premissas do calculo",
+    economicsOverrideConfirm: "Deseja continuar mesmo assim e mover a ideia para funding?",
+    economicsVerdict: {
+      favorable: "Relacao favoravel",
+      acceptable: "Relacao aceitavel",
+      marginal: "Relacao marginal",
+      unfavorable: "Consumo maior que o valor",
+      needs_quantification: "Falta quantificar o valor",
+      insufficient_data: "Sem estimativa de consumo",
+    },
+    lastUpdated: "Ultima atualizacao",
     componentsLabel: "Componentes",
     demoUser1: "Usuario demo 1: analista.finanzas / Demo1234!",
     demoUser2: "Usuario demo 2: analista.riesgo / Demo1234!",
+    demoUserTech: "Demo tecnico: analista.tecnologia / Demo1234!",
     demoAdmin: "Admin demo: admin.valuehub / Demo1234!",
     noFilesSelected: "Nao ha arquivos selecionados.",
     tenantNoContext: "Este tenant ainda nao tem contexto base. Complete e salve o formulario.",
@@ -661,6 +799,10 @@ const uiText = {
     errorContextFiles: "Erro carregando arquivos de contexto",
     errorMustRegisterContext: "Primeiro voce deve registrar o contexto base do tenant para avaliar a ideia.",
     errorCreateIdea: "Nao foi possivel criar a ideia",
+    duplicateWarningTitle: "Possivel ideia duplicada detectada",
+    duplicateWarningIdea: "Ideia existente",
+    duplicateWarningStatus: "Status",
+    duplicateWarningContactLabel: "Contato do responsavel",
     riskLow: "baixa",
     riskMedium: "media",
     riskHigh: "alta",
@@ -862,6 +1004,8 @@ function App() {
   const [selectedContextFiles, setSelectedContextFiles] = useState([]);
 
   const [myIdeas, setMyIdeas] = useState([]);
+  const [lastSyncAt, setLastSyncAt] = useState(null);
+  const [technicalQueue, setTechnicalQueue] = useState([]);
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
   const [activeClarificationIdeaId, setActiveClarificationIdeaId] = useState("");
   const [activeTechnicalIdeaId, setActiveTechnicalIdeaId] = useState("");
@@ -873,6 +1017,7 @@ function App() {
   const [technicalDraft, setTechnicalDraft] = useState("");
 
   const [error, setError] = useState("");
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
   const [clarificationFeedback, setClarificationFeedback] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -895,17 +1040,18 @@ function App() {
   const statusLabel = statusLabelByLanguage[uiLanguage] || statusLabelByLanguage.es;
   const rotatingWelcomeLanguage = WELCOME_LANGUAGES[welcomeLanguageIndex] || "es";
   const welcomeText = uiText[rotatingWelcomeLanguage] || uiText.es;
+  // Show ALL ideas regardless of UI language - ideas display in their original language
   const filteredMyIdeas = useMemo(
-    () => myIdeas.filter((idea) => normalizeIdeaLanguage(idea) === uiLanguage),
-    [myIdeas, uiLanguage],
+    () => myIdeas,
+    [myIdeas],
   );
   const filteredAdminUseCases = useMemo(
-    () => (adminDashboard?.approved_use_cases || []).filter((item) => normalizeIdeaLanguage(item) === uiLanguage),
-    [adminDashboard, uiLanguage],
+    () => (adminDashboard?.approved_use_cases || []),
+    [adminDashboard],
   );
   const filteredProductionApps = useMemo(
-    () => (adminDashboard?.token_cost?.production_apps || []).filter((item) => normalizeIdeaLanguage(item) === uiLanguage),
-    [adminDashboard, uiLanguage],
+    () => (adminDashboard?.token_cost?.production_apps || []),
+    [adminDashboard],
   );
   const quotaUsdTotals = useMemo(
     () => filteredProductionApps.reduce(
@@ -925,12 +1071,35 @@ function App() {
     [filteredMyIdeas, selectedIdeaId],
   );
   const selectedIdeaPanelRef = useRef(null);
+  const newIdeaFormRef = useRef(null);
 
   useEffect(() => {
     if (selectedIdeaPanelRef.current) {
       selectedIdeaPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [selectedIdeaId]);
+
+  function handleUseExampleIdea(exampleIdea) {
+    setForm({
+      tenant_id: user?.tenant_id || "",
+      title: exampleIdea.title || "",
+      problem_statement: exampleIdea.problem_statement || "",
+      expected_value: exampleIdea.expected_value || "",
+      affected_users: (exampleIdea.affected_users || []).join(", "),
+      source_language: exampleIdea.source_language || "es",
+    });
+    setError("");
+    setDuplicateWarning(null);
+    if (newIdeaFormRef.current) {
+      newIdeaFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function handleClearForm() {
+    setForm({ ...initialForm, tenant_id: user?.tenant_id || "" });
+    setError("");
+    setDuplicateWarning(null);
+  }
 
   function authHeaders() {
     return token ? { Authorization: `Bearer ${token}` } : {};
@@ -1010,6 +1179,122 @@ function App() {
     }
     const data = await response.json();
     setMyIdeas(data);
+  }
+
+  async function loadTechnicalQueue() {
+    try {
+      const response = await apiFetch("/ideas/technical-queue");
+      if (!response.ok) {
+        if (response.status === 403) {
+          setTechnicalQueue([]);
+          return;
+        }
+        throw new Error("Error loading technical queue");
+      }
+      const data = await response.json();
+      setTechnicalQueue(data);
+    } catch (err) {
+      console.error("Error loading technical queue:", err);
+      setTechnicalQueue([]);
+    }
+  }
+
+  async function handleTechnicalAction(ideaId, path, method) {
+    try {
+      const response = await apiFetch(`/ideas/${ideaId}/${path}`, { method });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        if (response.status === 409 && path === "move-to-funding") {
+          const confirmed = window.confirm(`${body.detail}\n\n${t.economicsOverrideConfirm}`);
+          if (!confirmed) {
+            setError("");
+            return;
+          }
+          const forced = await apiFetch(`/ideas/${ideaId}/${path}?override_economics=true`, { method });
+          if (!forced.ok) {
+            const forcedBody = await forced.json().catch(() => ({}));
+            setError(forcedBody.detail || t.errorUnexpected);
+            return;
+          }
+          setError("");
+          await loadTechnicalQueue();
+          return;
+        }
+        setError(body.detail || t.errorUnexpected);
+        return;
+      }
+      setError("");
+      await loadTechnicalQueue();
+    } catch (err) {
+      setError(err.message || t.errorUnexpected);
+    }
+  }
+
+  async function handleTechnicalReject(ideaId) {
+    const reason = window.prompt(t.rejectIdeaPrompt);
+    if (!reason || reason.trim().length < 5) {
+      return;
+    }
+    try {
+      const response = await apiFetch(`/ideas/${ideaId}/technical-rejection`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.detail || t.errorUnexpected);
+        return;
+      }
+      setError("");
+      await loadTechnicalQueue();
+    } catch (err) {
+      setError(err.message || t.errorUnexpected);
+    }
+  }
+
+  async function handleDownloadArchitecturePdf(ideaId) {
+    try {
+      const response = await apiFetch(`/ideas/${ideaId}/architecture-package-pdf`);
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.detail || t.errorUnexpected);
+        return;
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `architecture-package-${ideaId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setError("");
+    } catch (err) {
+      setError(err.message || t.errorUnexpected);
+    }
+  }
+
+  async function handleDeleteIdea(ideaId) {
+    if (!window.confirm(t.deleteIdeaConfirm)) {
+      return;
+    }
+    try {
+      const response = await apiFetch(`/ideas/${ideaId}`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error(t.deleteIdeaError);
+      }
+      // Remove the idea from the list
+      setMyIdeas((prev) => prev.filter((idea) => idea.idea_id !== ideaId));
+      // Clear selection if this was the selected idea
+      if (selectedIdeaId === ideaId) {
+        setSelectedIdeaId("");
+      }
+      setError(""); // Clear any previous errors
+    } catch (err) {
+      setError(err.message || t.deleteIdeaError);
+    }
   }
 
   async function loadAdminDashboard() {
@@ -1153,8 +1438,17 @@ function App() {
     setShowAdminWelcome(false);
     setShowInitialWelcome(false);
     setShowContextEditor(false);
-    setView(profile.role === "admin" ? "admin" : "main");
+    if (profile.role === "admin") {
+      setView("admin");
+    } else if (profile.role === "technical") {
+      setView("technical");
+    } else {
+      setView("main");
+    }
     const requests = [loadContext(profile.tenant_id, profile.role), loadMyIdeas()];
+    if (profile.role === "technical") {
+      requests.push(loadTechnicalQueue());
+    }
     if (profile.role === "admin") {
       requests.push(loadAdminDashboard());
     } else {
@@ -1169,6 +1463,22 @@ function App() {
     }
     bootstrapSession().catch((err) => setError(err.message));
   }, [token]);
+
+  useEffect(() => {
+    if (!token || !user) {
+      return undefined;
+    }
+    const intervalId = setInterval(() => {
+      if (user.role === "technical") {
+        loadTechnicalQueue();
+      } else if (user.role !== "admin") {
+        loadMyIdeas()
+          .then(() => setLastSyncAt(new Date()))
+          .catch(() => {});
+      }
+    }, 10000);
+    return () => clearInterval(intervalId);
+  }, [token, user]);
 
   useEffect(() => {
     localStorage.setItem(LANG_KEY, uiLanguage);
@@ -1506,6 +1816,19 @@ function App() {
     }).format(Number.isFinite(numeric) ? numeric : 0);
   }
 
+  function economicsPillClass(verdict) {
+    if (verdict === "favorable" || verdict === "acceptable") {
+      return "pill-success";
+    }
+    if (verdict === "marginal" || verdict === "needs_quantification") {
+      return "pill-warning";
+    }
+    if (verdict === "unfavorable") {
+      return "pill-danger";
+    }
+    return "pill-draft";
+  }
+
   function formatInt(value) {
     const numeric = Number(value || 0);
     return new Intl.NumberFormat(uiLanguage === "es" ? "es-ES" : uiLanguage === "pt" ? "pt-BR" : "en-US", {
@@ -1529,13 +1852,19 @@ function App() {
     };
   }
 
-  function quotaClockIcon(usagePct) {
+  function quotaUsageLevel(usagePct) {
     const pct = Number(usagePct || 0);
-    if (pct < 25) return "🕐";
-    if (pct < 50) return "🕓";
-    if (pct < 75) return "🕗";
-    if (pct < 90) return "🕙";
-    return "⏰";
+    const levels = {
+      es: ["Bajo", "Moderado", "Alto", "Muy alto", "Critico"],
+      en: ["Low", "Moderate", "High", "Very high", "Critical"],
+      pt: ["Baixo", "Moderado", "Alto", "Muito alto", "Critico"],
+    };
+    const scale = levels[uiLanguage] || levels.es;
+    if (pct < 25) return scale[0];
+    if (pct < 50) return scale[1];
+    if (pct < 75) return scale[2];
+    if (pct < 90) return scale[3];
+    return scale[4];
   }
 
   function buildServiceSuggestions(idea) {
@@ -2366,6 +2695,7 @@ function App() {
 
     setLoading(true);
     setError("");
+    setDuplicateWarning(null);
 
     try {
       if (!contextLoaded) {
@@ -2389,7 +2719,12 @@ function App() {
 
       if (!response.ok) {
         const body = await response.json();
-        throw new Error(body.detail || t.errorCreateIdea);
+        if (response.status === 409 && body.detail && typeof body.detail === "object" && body.detail.duplicate_idea) {
+          setDuplicateWarning(body.detail);
+          throw new Error(body.detail.message || t.errorCreateIdea);
+        }
+        const detailMessage = typeof body.detail === "string" ? body.detail : t.errorCreateIdea;
+        throw new Error(detailMessage);
       }
 
       setForm((prev) => ({ ...initialForm, tenant_id: user.tenant_id }));
@@ -2485,9 +2820,10 @@ function App() {
                 {loggingIn ? t.loggingIn : t.login}
               </button>
             </form>
-            <p className="meta">Demo usuario 1: analista.finanzas / Demo1234!</p>
-            <p className="meta">Demo usuario 2: analista.riesgo / Demo1234!</p>
+            <p className="meta">{t.demoUser1}</p>
+            <p className="meta">{t.demoUser2}</p>
             <p className="meta">Demo admin: admin.valuehub / Demo1234!</p>
+            <p className="meta">{t.demoUserTech}</p>
             {error && <p className="error">{error}</p>}
           </section>
         </div>
@@ -2546,15 +2882,20 @@ function App() {
                   <option value="pt">PT</option>
                 </select>
               </label>
-              <button type="button" onClick={() => setShowProjectInfo(!showProjectInfo)} title="Toggle project info" style={{fontSize: "0.8rem", padding: "8px 10px"}}>ℹ️ Info</button>
+              <button type="button" className="btn-quiet" onClick={() => setShowProjectInfo(!showProjectInfo)} title="Toggle project info">Info</button>
               {user.role === "admin" && (
                 <>
-                  <button type="button" onClick={() => setView("executiveDashboard")}>📊 Dashboard</button>
+                  <button type="button" onClick={() => setView("executiveDashboard")}>Dashboard</button>
                   <button type="button" onClick={() => setView("admin")}>{t.adminPanelTitle}</button>
                 </>
               )}
-              <button type="button" onClick={() => setView("main")}>{t.home}</button>
-              {user.role !== "admin" && (
+              {user.role === "technical" && (
+                <button type="button" onClick={() => setView("technical")}>{t.technicalQueue}</button>
+              )}
+              {user.role !== "admin" && user.role !== "technical" && (
+                <button type="button" onClick={() => setView("main")}>{t.home}</button>
+              )}
+              {user.role !== "admin" && user.role !== "technical" && (
                 <button type="button" onClick={() => setView("myIdeas")}>{t.myIdeas}</button>
               )}
               <button type="button" onClick={handleLogout}>{t.logout}</button>
@@ -2574,7 +2915,7 @@ function App() {
           )}
         </header>
 
-        {user.role !== "admin" && (
+        {user.role !== "admin" && user.role !== "technical" && (
           <section className="kpis" aria-label={t.myIdeas}>
             <article className="kpi-card">
               <p className="kpi-label">{t.myIdeas}</p>
@@ -2667,28 +3008,28 @@ function App() {
               {adminTab === "tokenCost" && (
                 <div className="admin-tab-panel">
                   <section className="kpis" aria-label={t.adminTabTokenCost}>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminProjectsInProduction} tabIndex={0}>
                       <p className="kpi-label">{t.adminProjectsInProduction}</p>
                       <p className="kpi-value">{filteredProductionApps.length}</p>
                     </article>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminQuotaTotal} tabIndex={0}>
                       <p className="kpi-label">{t.adminQuotaTotal}</p>
                       <p className="kpi-value">{formatInt(adminDashboard?.token_cost?.quota_total_tokens || 0)}</p>
                       <p className="meta">{t.adminQuotaTotalUsd}: {formatUsd(quotaUsdTotals.total)}</p>
                     </article>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminQuotaConsumed} tabIndex={0}>
                       <p className="kpi-label">{t.adminQuotaConsumed}</p>
                       <p className="kpi-value">{formatInt(adminDashboard?.token_cost?.quota_consumed_tokens || 0)}</p>
                       <p className="meta">{t.adminQuotaConsumedUsd}: {formatUsd(quotaUsdTotals.consumed)}</p>
                     </article>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminQuotaRemaining} tabIndex={0}>
                       <p className="kpi-label">{t.adminQuotaRemaining}</p>
                       <p className="kpi-value">{formatInt(adminDashboard?.token_cost?.quota_remaining_tokens || 0)}</p>
                       <p className="meta">{t.adminQuotaRemainingUsd}: {formatUsd(quotaUsdTotals.remaining)}</p>
                     </article>
                   </section>
 
-                  <p className="meta">
+                  <p className="meta tooltip-host" data-tooltip={t.helpAdminTokenCost} tabIndex={0}>
                     {t.adminQuotaMonth}: {adminDashboard?.token_cost?.quota_month || "-"} | {t.adminEstimatedCost}: {formatUsd(adminDashboard?.token_cost?.estimated_cost_usd || 0)}
                   </p>
                   <p className="meta">{t.adminQuotaUsdHint}</p>
@@ -2704,12 +3045,11 @@ function App() {
                           <div className="item-top">
                             <h3>{item.title}</h3>
                             <span className={item.usage_pct >= 90 ? "pill pill-danger" : item.usage_pct >= 75 ? "pill pill-warning" : "pill pill-success"}>
-                              <span className="quota-clock-icon" aria-hidden="true">{quotaClockIcon(item.usage_pct)}</span>
                               {item.usage_pct}%
                             </span>
                           </div>
                           <p className="meta">{t.owner}: {item.owner_display_name}</p>
-                          <p className="meta">{t.adminQuotaUsageClock}: {quotaClockIcon(item.usage_pct)}</p>
+                          <p className="meta">{t.adminQuotaUsageClock}: {quotaUsageLevel(item.usage_pct)}</p>
                           <p className="meta">{t.adminQuotaTotal}: {formatInt(item.quota_total_tokens)}</p>
                           <p className="meta">{t.adminQuotaTotalUsd}: {formatUsd(quotaUsd.quotaTotalUsd)}</p>
                           <p className="meta">{t.adminQuotaConsumed}: {formatInt(item.consumed_month_tokens)}</p>
@@ -2761,25 +3101,29 @@ function App() {
               {adminTab === "metrics" && (
                 <div className="admin-tab-panel">
                   <section className="kpis" aria-label={t.adminTabMetrics}>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminTotalIdeas} tabIndex={0}>
                       <p className="kpi-label">{t.adminTotalIdeas}</p>
                       <p className="kpi-value">{adminDashboard?.portfolio_metrics?.total_ideas || 0}</p>
                     </article>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminApprovalRate} tabIndex={0}>
                       <p className="kpi-label">{t.adminApprovalRate}</p>
                       <p className="kpi-value">{adminDashboard?.portfolio_metrics?.approval_rate_pct || 0}%</p>
                     </article>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminTechnicalPassRate} tabIndex={0}>
                       <p className="kpi-label">{t.adminTechnicalPassRate}</p>
                       <p className="kpi-value">{adminDashboard?.portfolio_metrics?.technical_pass_rate_pct || 0}%</p>
                     </article>
-                    <article className="kpi-card">
+                    <article className="kpi-card tooltip-host" data-tooltip={t.helpAdminAvgFeasibility} tabIndex={0}>
                       <p className="kpi-label">{t.adminAvgFeasibility}</p>
                       <p className="kpi-value">{adminDashboard?.portfolio_metrics?.avg_feasibility_score || 0}</p>
                     </article>
                   </section>
-                  <p className="meta">{t.adminAvgCycleHours}: {adminDashboard?.portfolio_metrics?.avg_cycle_time_hours || 0}</p>
-                  <p className="meta" style={{ marginTop: 10 }}>{t.adminTopComponents}</p>
+                  <p className="meta tooltip-host" data-tooltip={t.helpAdminAvgCycleHours} tabIndex={0}>
+                    {t.adminAvgCycleHours}: {adminDashboard?.portfolio_metrics?.avg_cycle_time_hours || 0}
+                  </p>
+                  <p className="meta tooltip-host" data-tooltip={t.helpAdminTopComponents} tabIndex={0} style={{ marginTop: 10 }}>
+                    {t.adminTopComponents}
+                  </p>
                   {(adminDashboard?.portfolio_metrics?.top_components || []).length === 0 ? (
                     <p className="empty">{t.adminNoComponentData}</p>
                   ) : (
@@ -2800,8 +3144,134 @@ function App() {
           <main className="grid grid-single">
             <ExecutiveDashboard lang={uiLanguage} />
           </main>
+        ) : view === "technical" && user.role === "technical" ? (
+          <main className="grid grid-single">
+            <section className="card card-list">
+              <div className="card-header">
+                <h2>{t.technicalQueue}</h2>
+                <p>{t.technicalValidation}</p>
+              </div>
+              {technicalQueue.length > 0 ? (
+                <ul className="idea-list">
+                  {technicalQueue.map((entry, index) => {
+                    const idea = entry.idea;
+                    const economics = entry.value_economics;
+                    return (
+                    <li key={idea.idea_id} style={{ "--delay": `${index * 70}ms` }}>
+                      <div className="item-top">
+                        <h3>{idea.title}</h3>
+                        <span className="pill pill-info">{t.technicalReviewPending}</span>
+                      </div>
+                      <p className="meta">{t.owner}: {idea.owner_display_name}</p>
+                      <p className="meta">{t.problemStatement}: {idea.problem_statement.substring(0, 100)}...</p>
+                      <p className="meta">{t.expectedValue}: {idea.expected_value.substring(0, 100)}...</p>
+                      {idea.business_validation && (
+                        <p className="meta">
+                          {t.scores}: {idea.business_validation.value_score} | {idea.business_validation.risk_score}
+                        </p>
+                      )}
+                      {economics && (
+                        <div className={`economics-panel economics-${economics.verdict}`}>
+                          <div className="economics-metrics">
+                            <div>
+                              <p className="economics-label">{t.economicsMonthlyCost}</p>
+                              <p className="economics-value">{formatUsd(economics.estimated_monthly_cost_usd)}</p>
+                            </div>
+                            <div>
+                              <p className="economics-label">{t.economicsMonthlySavings}</p>
+                              <p className="economics-value">{formatUsd(economics.estimated_monthly_savings_usd)}</p>
+                            </div>
+                            <div>
+                              <p className="economics-label">{t.economicsRatio}</p>
+                              <p className="economics-value">
+                                {economics.value_to_cost_ratio !== null && economics.value_to_cost_ratio !== undefined
+                                  ? `${economics.value_to_cost_ratio}x`
+                                  : "-"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="economics-label">{t.economicsNetMonthly}</p>
+                              <p className="economics-value">{formatUsd(economics.net_monthly_value_usd)}</p>
+                            </div>
+                          </div>
+                          <p className="meta">
+                            <span className={`pill ${economicsPillClass(economics.verdict)}`}>
+                              {t.economicsVerdict[economics.verdict] || economics.verdict}
+                            </span>
+                          </p>
+                          <p className="meta">{economics.message}</p>
+                          <details>
+                            <summary className="meta">{t.economicsAssumptions}</summary>
+                            {(economics.assumptions || []).map((assumption, idx) => (
+                              <p className="meta" key={`eco-${idea.idea_id}-${idx}`}>{assumption}</p>
+                            ))}
+                          </details>
+                        </div>
+                      )}
+                      <div className="action-row action-row-compact">
+                        <button type="button" onClick={() => setSelectedIdeaId(idea.idea_id)}>
+                          {t.viewInFocus}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-approve"
+                          onClick={() => handleTechnicalAction(idea.idea_id, "technical-approval", "POST")}
+                        >
+                          {t.technicalApprove}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-quiet"
+                          onClick={() => handleTechnicalAction(idea.idea_id, "move-to-funding", "PATCH")}
+                        >
+                          {t.moveToFunding}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-quiet"
+                          onClick={() => handleTechnicalAction(idea.idea_id, "move-to-development", "PATCH")}
+                        >
+                          {t.moveToDevelopment}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-quiet"
+                          onClick={() => handleTechnicalAction(idea.idea_id, "move-to-production", "PATCH")}
+                        >
+                          {t.moveToProduction}
+                        </button>
+                        {idea.architecture_package && (
+                          <button
+                            type="button"
+                            className="btn-outline"
+                            onClick={() => handleDownloadArchitecturePdf(idea.idea_id)}
+                          >
+                            {t.downloadArchitecturePdf}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => handleTechnicalReject(idea.idea_id)}
+                        >
+                          {t.technicalReject}
+                        </button>
+                      </div>
+                    </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="empty">{t.noIdeas}</p>
+              )}
+            </section>
+          </main>
         ) : view === "main" ? (
           <main className="grid">
+            {user.role !== "admin" && (
+              <ProductionIdeasCatalog lang={uiLanguage} apiUrl={API_URL} authToken={token} />
+            )}
+
             {user.role !== "admin" ? (
               <section className="card card-form">
                 <div className="card-header">
@@ -2915,7 +3385,7 @@ function App() {
             )}
 
             {user.role !== "admin" && (
-              <section className="card card-form">
+              <section className="card card-form" ref={newIdeaFormRef}>
                 <div className="card-header">
                   <h2>{t.newIdea}</h2>
                   <p>{t.newIdeaSubtitle}</p>
@@ -2961,11 +3431,42 @@ function App() {
                       <option value="pt">pt</option>
                     </select>
                   </label>
-                  <button type="submit" disabled={loading}>
-                    {loading ? t.savingIdea : t.saveIdea}
-                  </button>
+                  <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                    <button type="submit" disabled={loading}>
+                      {loading ? t.savingIdea : t.saveIdea}
+                    </button>
+                    <button type="button" onClick={handleClearForm} disabled={loading}>
+                      {t.clearForm}
+                    </button>
+                  </div>
                 </form>
+
+                {duplicateWarning?.duplicate_idea && (
+                  <div className="duplicate-warning">
+                    <h3>{t.duplicateWarningTitle}</h3>
+                    <p>{duplicateWarning.message}</p>
+                    <p className="meta">
+                      <strong>{t.duplicateWarningIdea}:</strong> {duplicateWarning.duplicate_idea.title}
+                    </p>
+                    <p className="meta">
+                      <strong>{t.duplicateWarningStatus}:</strong> {duplicateWarning.duplicate_idea.status}
+                    </p>
+                    <p className="meta">
+                      <strong>{t.duplicateWarningContactLabel}:</strong> {duplicateWarning.duplicate_idea.owner_display_name}
+                      {duplicateWarning.duplicate_idea.owner_contact ? ` (${duplicateWarning.duplicate_idea.owner_contact})` : ""}
+                    </p>
+                  </div>
+                )}
               </section>
+            )}
+
+            {user.role !== "admin" && (
+              <DemoIdeasCatalog
+                lang={uiLanguage}
+                apiUrl={API_URL}
+                authToken={token}
+                onUseExample={handleUseExampleIdea}
+              />
             )}
 
           </main>
@@ -2975,6 +3476,9 @@ function App() {
               <div className="card-header">
                 <h2>{t.myIdeas}</h2>
                 <p>{t.myIdeasSubtitle}</p>
+                {lastSyncAt && (
+                  <p className="meta">{t.lastUpdated}: {lastSyncAt.toLocaleTimeString()}</p>
+                )}
               </div>
               {selectedIdea ? (
                 <section
@@ -3214,11 +3718,30 @@ function App() {
                       <p className="meta">{t.owner}: {idea.owner_display_name}</p>
                       <p className="meta">{t.currentStage}: {stageLabel(idea.current_stage)}</p>
                       <p className="meta">
+                        {t.adminDeploymentStatus}:{" "}
+                        <span className={idea.deployment_status === "production" ? "pill pill-success" : idea.deployment_status === "funding" ? "pill pill-warning" : "pill pill-draft"}>
+                          {idea.deployment_status === "production"
+                            ? t.adminDeploymentProduction
+                            : idea.deployment_status === "funding"
+                              ? t.adminDeploymentFunding
+                              : t.adminDeploymentDevelopment}
+                        </span>
+                      </p>
+                      <p className="meta">
                         {t.scores}: {idea.business_validation.value_score} | {idea.business_validation.risk_score}
                       </p>
-                      <button type="button" onClick={() => setSelectedIdeaId(idea.idea_id)}>
-                        {t.viewInFocus}
-                      </button>
+                      <div className="action-row action-row-compact">
+                        <button type="button" onClick={() => setSelectedIdeaId(idea.idea_id)}>
+                          {t.viewInFocus}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => handleDeleteIdea(idea.idea_id)}
+                        >
+                          {t.deleteIdea}
+                        </button>
+                      </div>
                       {similarIdeaMap[idea.idea_id] && (
                         <p className="meta rejection-detail">
                           {t.possibleDuplicate} "{similarIdeaMap[idea.idea_id]}"
@@ -3280,12 +3803,22 @@ function App() {
                 <p className="meta" style={{ margin: 0 }}>
                   {t.viewPackage} • {architecturePreview.ideaId}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setArchitecturePreview({ ideaId: "", html: "" })}
-                >
-                  {t.closePreview}
-                </button>
+                <div className="action-row">
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={() => handleDownloadArchitecturePdf(architecturePreview.ideaId)}
+                  >
+                    {t.downloadArchitecturePdf}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-quiet"
+                    onClick={() => setArchitecturePreview({ ideaId: "", html: "" })}
+                  >
+                    {t.closePreview}
+                  </button>
+                </div>
               </div>
               <iframe
                 title="architecture-package-preview"

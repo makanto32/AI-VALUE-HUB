@@ -422,6 +422,7 @@ class AuthStore:
                 "user_id": "user-fin-01",
                 "username": "analista.finanzas",
                 "display_name": "Ana Finanzas",
+                "email": "ana.finanzas@contoso-demo.com",
                 "tenant_id": "contoso-demo",
                 "role": "analyst",
                 "password": "Demo1234!",
@@ -430,6 +431,7 @@ class AuthStore:
                 "user_id": "user-risk-02",
                 "username": "analista.riesgo",
                 "display_name": "Rafa Riesgo",
+                "email": "rafa.riesgo@contoso-demo.com",
                 "tenant_id": "contoso-demo",
                 "role": "analyst",
                 "password": "Demo1234!",
@@ -438,8 +440,18 @@ class AuthStore:
                 "user_id": "user-admin-00",
                 "username": "admin.valuehub",
                 "display_name": "Admin Value Hub",
+                "email": "admin@contoso-demo.com",
                 "tenant_id": "contoso-demo",
                 "role": "admin",
+                "password": "Demo1234!",
+            },
+            "analista.tecnologia": {
+                "user_id": "user-tech-03",
+                "username": "analista.tecnologia",
+                "display_name": "Tech Validacion",
+                "email": "tech.validacion@contoso-demo.com",
+                "tenant_id": "contoso-demo",
+                "role": "technical",
                 "password": "Demo1234!",
             },
         }
@@ -471,6 +483,12 @@ class AuthStore:
             return None
 
         user_id = row[0]
+        for user in self._users_by_username.values():
+            if user["user_id"] == user_id:
+                return user
+        return None
+
+    def get_user_by_id(self, user_id: str) -> Dict[str, str] | None:
         for user in self._users_by_username.values():
             if user["user_id"] == user_id:
                 return user

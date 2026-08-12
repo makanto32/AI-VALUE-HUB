@@ -248,6 +248,30 @@ class ArchitecturePackageResponse(BaseModel):
 class DeploymentStatusUpdateRequest(BaseModel):
     deployment_status: DeploymentStatus
 
+
+class TechnicalRejectionRequest(BaseModel):
+    reason: str = Field(..., min_length=5, max_length=500)
+
+
+class ValueEconomics(BaseModel):
+    estimated_monthly_cost_usd: float = Field(ge=0)
+    estimated_monthly_savings_usd: float = Field(ge=0)
+    net_monthly_value_usd: float
+    value_to_cost_ratio: Optional[float] = None
+    payback_months: Optional[float] = None
+    value_basis: str
+    value_confidence: str
+    cost_basis: str
+    verdict: str
+    message: str
+    assumptions: List[str] = Field(default_factory=list)
+
+
+class TechnicalQueueItem(BaseModel):
+    idea: "IdeaCase"
+    value_economics: ValueEconomics
+
+
 class QuotaAdjustment(BaseModel):
     adjustment_type: str = Field(..., min_length=3, max_length=30)
     delta_tokens: int = Field(..., ge=1)

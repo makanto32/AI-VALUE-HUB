@@ -1,0 +1,119 @@
+/* Production Ideas Catalog Styles */
+
+.production-ideas-catalog {
+  margin-bottom: 24px;
+}
+
+.production-ideas-catalog .production-toggle-btn {
+  width: 100%;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px dashed #6ee7b7;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.production-ideas-catalog .production-toggle-btn:hover {
+  background: #d1fae5;
+  border-color: #10b981;
+}
+
+.production-ideas-catalog .production-catalog-body {
+  margin-top: 12px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 800px;
+  }
+}
+
+.production-ideas-catalog .production-ideas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.production-ideas-catalog .production-idea-card {
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border: 2px solid #6ee7b7;
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.production-ideas-catalog .production-idea-card:hover {
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.18);
+  transform: translateY(-2px);
+}
+
+.production-ideas-catalog .production-idea-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.production-ideas-catalog .production-idea-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #064e3b;
+  line-height: 1.4;
+}
+
+.production-ideas-catalog .production-badge {
+  background: #10b981;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.production-ideas-catalog .production-idea-details {
+  margin-top: 10px;
+  border-top: 1px solid #a7f3d0;
+  padding-top: 10px;
+}
+
+.production-ideas-catalog .production-idea-details .meta {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 6px 0;
+  color: #374151;
+}
+
+.production-ideas-catalog .scores {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.production-ideas-catalog .scores .score {
+  font-size: 12px;
+  font-weight: 500;
+  color: #065f46;
+}
+
+@media (max-width: 768px) {
+  .production-ideas-catalog .production-ideas-grid {
+    grid-template-columns: 1fr;
+  }
+}

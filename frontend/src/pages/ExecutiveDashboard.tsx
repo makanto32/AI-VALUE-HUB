@@ -55,6 +55,28 @@ const i18n: Record<string, Record<string, string>> = {
     trendAnnual: 'Total anual',
     footerMsg: 'Dashboard actualizado en tiempo real. Última actualización',
     loading: 'Cargando métricas ejecutivas...',
+    helpRework: 'Formula: 100 - (tasa de duplicados / 2). La tasa de duplicados es el porcentaje de ideas con al menos otra idea similar por encima del 60%. Representa el retrabajo evitado frente a un analisis manual.',
+    helpDuplicates: 'Ideas con al menos una idea similar (similitud > 60%) dividido entre el total de ideas del tenant, expresado en porcentaje y limitado a 100%.',
+    helpCollaboration: 'Promedio de la tasa de participacion de los 5 colaboradores mas activos. La tasa de cada persona es sus ideas enviadas sobre el total de ideas del tenant.',
+    helpAiAdoption: 'Ideas con validacion tecnica registrada o con preguntas tecnicas generadas, dividido entre el total de ideas.',
+    helpTotalIdeas: 'Conteo de todas las ideas almacenadas para el tenant, sin importar su estado.',
+    helpDuplicatesDetected: 'Numero de ideas para las que existe al menos otra idea con similitud mayor al 60%, calculada por coincidencia de terminos en titulo y problema.',
+    helpCostAvoided: 'Duplicados detectados multiplicados por 2.000 USD, valor asumido del esfuerzo de analisis que se evita al no reprocesar una idea repetida.',
+    helpAvgSimilarity: 'Promedio de similitud entre todos los pares de ideas con coincidencia mayor a cero, acotado a 100%.',
+    helpIdeasValidatedAI: 'Ideas que tienen validacion tecnica registrada o preguntas tecnicas generadas por el agente, sobre el total de ideas.',
+    helpAgentAssisted: 'Ideas que registraron al menos una interaccion de clarificacion con el agente.',
+    helpAvgQuestionsPerIdea: 'Suma de preguntas de clarificacion y preguntas tecnicas de todas las ideas, dividida entre el numero total de ideas.',
+    helpValidationPatterns: 'Patrones derivados del analisis agregado de las validaciones registradas (temas recurrentes en preguntas y supuestos).',
+    helpIdeasInProd: 'Ideas cuyo estado de despliegue es produccion.',
+    helpAnnualValue: 'Para cada idea en produccion: (score de valor de negocio / 100) x 80.000 USD. Es una estimacion de valor de primer ano y se suma para todo el portafolio.',
+    helpHoursSaved: 'Ideas con validacion tecnica x 8 horas de validacion manual evitada x 12 meses.',
+    helpSuccessRate: 'Ideas en produccion dividido entre el total de ideas del tenant.',
+    helpAnnualInvestment: 'Inversion anual configurada para la plataforma (valor por defecto 100.000 USD). Se desglosa en costo de plataforma y equivalente de consultoria.',
+    helpAnnualValueGenerated: 'Suma de tres componentes: ahorro por horas evitadas (horas x 150 USD), costo evitado por duplicados y valor anual estimado de las ideas en produccion.',
+    helpRoi: 'Formula: (valor generado - inversion anual) / inversion anual x 100.',
+    helpPayback: 'Formula: inversion anual dividida entre el valor mensual promedio (valor generado / 12).',
+    helpCollaboratorsTable: 'Ideas agrupadas por propietario. Aprobadas son las ideas con estado viable de negocio; la participacion es ideas del colaborador sobre el total del tenant.',
+    helpTrends: 'Conteo de ideas por mes segun su fecha de creacion (enviadas) y su fecha de actualizacion al quedar viables (aprobadas). El costo mensual usa el costo fijo de plataforma.',
   },
   en: {
     title: 'Dashboard - AI Value Metrics',
@@ -107,6 +129,28 @@ const i18n: Record<string, Record<string, string>> = {
     trendAnnual: 'Annual total',
     footerMsg: 'Dashboard updated in real time. Last update',
     loading: 'Loading executive metrics...',
+    helpRework: 'Formula: 100 - (duplicate rate / 2). The duplicate rate is the share of ideas that have at least one similar idea above 60%. It represents rework avoided versus a manual analysis.',
+    helpDuplicates: 'Ideas with at least one similar idea (similarity > 60%) divided by the total ideas of the tenant, expressed as a percentage and capped at 100%.',
+    helpCollaboration: 'Average participation rate of the top 5 collaborators. Each person rate is their submitted ideas over the tenant total.',
+    helpAiAdoption: 'Ideas with a recorded technical validation or generated technical questions, divided by the total number of ideas.',
+    helpTotalIdeas: 'Count of every idea stored for the tenant, regardless of status.',
+    helpDuplicatesDetected: 'Number of ideas for which another idea exists with more than 60% similarity, computed from term overlap in title and problem statement.',
+    helpCostAvoided: 'Detected duplicates multiplied by USD 2,000, the assumed analysis effort avoided by not reprocessing a repeated idea.',
+    helpAvgSimilarity: 'Average similarity across all idea pairs with a non-zero match, capped at 100%.',
+    helpIdeasValidatedAI: 'Ideas with a recorded technical validation or agent-generated technical questions, over the total number of ideas.',
+    helpAgentAssisted: 'Ideas that recorded at least one clarification interaction with the agent.',
+    helpAvgQuestionsPerIdea: 'Sum of clarification and technical questions across all ideas, divided by the total number of ideas.',
+    helpValidationPatterns: 'Patterns derived from the aggregated analysis of recorded validations (recurring themes in questions and assumptions).',
+    helpIdeasInProd: 'Ideas whose deployment status is production.',
+    helpAnnualValue: 'For each idea in production: (business value score / 100) x USD 80,000. It is a first-year estimate summed across the portfolio.',
+    helpHoursSaved: 'Ideas with technical validation x 8 hours of manual validation avoided x 12 months.',
+    helpSuccessRate: 'Ideas in production divided by the total number of ideas in the tenant.',
+    helpAnnualInvestment: 'Configured annual platform investment (default USD 100,000). It is broken down into platform cost and consulting equivalent.',
+    helpAnnualValueGenerated: 'Sum of three components: savings from avoided hours (hours x USD 150), avoided duplicate cost, and estimated annual value of ideas in production.',
+    helpRoi: 'Formula: (value generated - annual investment) / annual investment x 100.',
+    helpPayback: 'Formula: annual investment divided by the average monthly value (value generated / 12).',
+    helpCollaboratorsTable: 'Ideas grouped by owner. Approved counts ideas with business viable status; participation is the collaborator ideas over the tenant total.',
+    helpTrends: 'Idea counts per month based on creation date (submitted) and update date when they became viable (approved). Monthly cost uses the fixed platform cost.',
   },
   pt: {
     title: 'Painel - Métricas de Valor da IA',
@@ -159,6 +203,28 @@ const i18n: Record<string, Record<string, string>> = {
     trendAnnual: 'Total anual',
     footerMsg: 'Painel atualizado em tempo real. Última atualização',
     loading: 'Carregando métricas executivas...',
+    helpRework: 'Formula: 100 - (taxa de duplicatas / 2). A taxa de duplicatas e a proporcao de ideias com pelo menos outra ideia similar acima de 60%. Representa o retrabalho evitado frente a uma analise manual.',
+    helpDuplicates: 'Ideias com pelo menos uma ideia similar (similaridade > 60%) divididas pelo total de ideias do tenant, em porcentagem e limitado a 100%.',
+    helpCollaboration: 'Media da taxa de participacao dos 5 colaboradores mais ativos. A taxa de cada pessoa e suas ideias enviadas sobre o total do tenant.',
+    helpAiAdoption: 'Ideias com validacao tecnica registrada ou com perguntas tecnicas geradas, divididas pelo total de ideias.',
+    helpTotalIdeas: 'Contagem de todas as ideias armazenadas para o tenant, independentemente do status.',
+    helpDuplicatesDetected: 'Numero de ideias para as quais existe outra ideia com similaridade maior que 60%, calculada pela coincidencia de termos no titulo e no problema.',
+    helpCostAvoided: 'Duplicatas detectadas multiplicadas por USD 2.000, valor assumido do esforco de analise evitado ao nao reprocessar uma ideia repetida.',
+    helpAvgSimilarity: 'Media de similaridade entre todos os pares de ideias com coincidencia maior que zero, limitada a 100%.',
+    helpIdeasValidatedAI: 'Ideias com validacao tecnica registrada ou perguntas tecnicas geradas pelo agente, sobre o total de ideias.',
+    helpAgentAssisted: 'Ideias que registraram ao menos uma interacao de clarificacao com o agente.',
+    helpAvgQuestionsPerIdea: 'Soma das perguntas de clarificacao e tecnicas de todas as ideias, dividida pelo numero total de ideias.',
+    helpValidationPatterns: 'Padroes derivados da analise agregada das validacoes registradas (temas recorrentes em perguntas e premissas).',
+    helpIdeasInProd: 'Ideias cujo status de implantacao e producao.',
+    helpAnnualValue: 'Para cada ideia em producao: (score de valor de negocio / 100) x USD 80.000. E uma estimativa de primeiro ano somada para todo o portfolio.',
+    helpHoursSaved: 'Ideias com validacao tecnica x 8 horas de validacao manual evitada x 12 meses.',
+    helpSuccessRate: 'Ideias em producao divididas pelo total de ideias do tenant.',
+    helpAnnualInvestment: 'Investimento anual configurado para a plataforma (padrao USD 100.000). Desdobra-se em custo de plataforma e equivalente de consultoria.',
+    helpAnnualValueGenerated: 'Soma de tres componentes: economia por horas evitadas (horas x USD 150), custo evitado por duplicatas e valor anual estimado das ideias em producao.',
+    helpRoi: 'Formula: (valor gerado - investimento anual) / investimento anual x 100.',
+    helpPayback: 'Formula: investimento anual dividido pelo valor mensal medio (valor gerado / 12).',
+    helpCollaboratorsTable: 'Ideias agrupadas por proprietario. Aprovadas sao as ideias com status viavel de negocio; a participacao e as ideias do colaborador sobre o total do tenant.',
+    helpTrends: 'Contagem de ideias por mes conforme a data de criacao (enviadas) e a data de atualizacao ao ficarem viaveis (aprovadas). O custo mensal usa o custo fixo de plataforma.',
   },
 };
 
@@ -259,25 +325,25 @@ export default function ExecutiveDashboard({ lang = 'es' }: Props) {
 
       {/* KPIs Principales */}
       <div className={styles.kpiGrid}>
-        <div className={styles.kpiCard}>
+        <div className={`${styles.kpiCard} ${styles.tooltipHost}`} data-tooltip={t.helpRework} tabIndex={0}>
           <div className={styles.kpiLabel}>{t.kpiRework}</div>
           <div className={styles.kpiValue}>{metrics.retwork_reduction_percentage.toFixed(1)}%</div>
           <div className={styles.kpiDescription}>{t.kpiReworkDesc}</div>
         </div>
 
-        <div className={styles.kpiCard}>
+        <div className={`${styles.kpiCard} ${styles.tooltipHost}`} data-tooltip={t.helpDuplicates} tabIndex={0}>
           <div className={styles.kpiLabel}>{t.kpiDuplicates}</div>
           <div className={styles.kpiValue}>{metrics.duplicates_avoided_percentage.toFixed(1)}%</div>
           <div className={styles.kpiDescription}>{t.kpiDuplicatesDesc}</div>
         </div>
 
-        <div className={styles.kpiCard}>
+        <div className={`${styles.kpiCard} ${styles.tooltipHost}`} data-tooltip={t.helpCollaboration} tabIndex={0}>
           <div className={styles.kpiLabel}>{t.kpiCollaboration}</div>
           <div className={styles.kpiValue}>{metrics.collaborator_participation_rate.toFixed(1)}%</div>
           <div className={styles.kpiDescription}>{t.kpiCollaborationDesc}</div>
         </div>
 
-        <div className={styles.kpiCard}>
+        <div className={`${styles.kpiCard} ${styles.tooltipHost}`} data-tooltip={t.helpAiAdoption} tabIndex={0}>
           <div className={styles.kpiLabel}>{t.kpiAiAdoption}</div>
           <div className={styles.kpiValue}>{metrics.ai_adoption_rate.toFixed(1)}%</div>
           <div className={styles.kpiDescription}>{t.kpiAiAdoptionDesc}</div>
@@ -288,25 +354,25 @@ export default function ExecutiveDashboard({ lang = 'es' }: Props) {
       <section className={styles.section}>
         <h2>{t.sectionDuplication}</h2>
         <div className={styles.metricsGrid}>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpTotalIdeas} tabIndex={0}>
             <h3>{t.totalIdeas}</h3>
             <p className={styles.metricValue}>
               {metrics.duplication_metrics.total_ideas_submitted}
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpDuplicatesDetected} tabIndex={0}>
             <h3>{t.duplicatesDetected}</h3>
             <p className={styles.metricValue}>
               {metrics.duplication_metrics.duplicates_detected}
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpCostAvoided} tabIndex={0}>
             <h3>{t.costAvoided}</h3>
             <p className={styles.metricValue}>
               ${(metrics.duplication_metrics.duplicates_avoided_cost / 1000).toFixed(0)}K
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpAvgSimilarity} tabIndex={0}>
             <h3>{t.avgSimilarity}</h3>
             <p className={styles.metricValue}>
               {metrics.duplication_metrics.avg_similarity_score.toFixed(1)}%
@@ -319,25 +385,25 @@ export default function ExecutiveDashboard({ lang = 'es' }: Props) {
       <section className={styles.section}>
         <h2>{t.sectionAdoption}</h2>
         <div className={styles.metricsGrid}>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpIdeasValidatedAI} tabIndex={0}>
             <h3>{t.ideasValidatedAI}</h3>
             <p className={styles.metricValue}>
               {metrics.adoption_metrics.ideas_using_ai_validation} {t.of} {metrics.adoption_metrics.ideas_total}
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpAgentAssisted} tabIndex={0}>
             <h3>{t.agentAssisted}</h3>
             <p className={styles.metricValue}>
               {metrics.adoption_metrics.agent_assisted_validations}
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpAvgQuestionsPerIdea} tabIndex={0}>
             <h3>{t.avgQuestionsPerIdea}</h3>
             <p className={styles.metricValue}>
               {metrics.adoption_metrics.avg_agent_questions_per_idea.toFixed(1)}
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpValidationPatterns} tabIndex={0}>
             <h3>{t.validationPatterns}</h3>
             <ul className={styles.patternList}>
               {metrics.adoption_metrics.common_validation_patterns.map(
@@ -354,25 +420,25 @@ export default function ExecutiveDashboard({ lang = 'es' }: Props) {
       <section className={styles.section}>
         <h2>{t.sectionProduction}</h2>
         <div className={styles.metricsGrid}>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpIdeasInProd} tabIndex={0}>
             <h3>{t.ideasInProd}</h3>
             <p className={styles.metricValue}>
               {metrics.production_metrics.ideas_in_production}
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpAnnualValue} tabIndex={0}>
             <h3>{t.annualValue}</h3>
             <p className={styles.metricValue}>
               ${(metrics.production_metrics.estimated_annual_value / 1_000_000).toFixed(1)}M
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpHoursSaved} tabIndex={0}>
             <h3>{t.hoursSaved}</h3>
             <p className={styles.metricValue}>
               {(metrics.production_metrics.estimated_hours_saved_annually / 1000).toFixed(0)}K
             </p>
           </div>
-          <div className={styles.metricBox}>
+          <div className={`${styles.metricBox} ${styles.tooltipHost}`} data-tooltip={t.helpSuccessRate} tabIndex={0}>
             <h3>{t.successRate}</h3>
             <p className={styles.metricValue}>
               {metrics.production_metrics.deployment_success_rate.toFixed(1)}%
@@ -400,25 +466,25 @@ export default function ExecutiveDashboard({ lang = 'es' }: Props) {
       <section className={styles.section}>
         <h2>{t.sectionROI}</h2>
         <div className={styles.roiGrid}>
-          <div className={styles.roiCard}>
+          <div className={`${styles.roiCard} ${styles.tooltipHost}`} data-tooltip={t.helpAnnualInvestment} tabIndex={0}>
             <h3>{t.annualInvestment}</h3>
             <p className={styles.roiValue}>
               ${(metrics.roi_metrics.total_ai_investment_usd / 1000).toFixed(0)}K
             </p>
           </div>
-          <div className={styles.roiCard}>
+          <div className={`${styles.roiCard} ${styles.tooltipHost}`} data-tooltip={t.helpAnnualValueGenerated} tabIndex={0}>
             <h3>{t.annualValueGenerated}</h3>
             <p className={styles.roiValue}>
               ${(metrics.roi_metrics.estimated_annual_value_generated / 1_000_000).toFixed(2)}M
             </p>
           </div>
-          <div className={styles.roiCard}>
+          <div className={`${styles.roiCard} ${styles.tooltipHost}`} data-tooltip={t.helpRoi} tabIndex={0}>
             <h3>{t.roi}</h3>
             <p className={styles.roiValue}>
               {metrics.roi_metrics.roi_percentage.toFixed(0)}%
             </p>
           </div>
-          <div className={styles.roiCard}>
+          <div className={`${styles.roiCard} ${styles.tooltipHost}`} data-tooltip={t.helpPayback} tabIndex={0}>
             <h3>{t.payback}</h3>
             <p className={styles.roiValue}>
               {metrics.roi_metrics.payback_period_months.toFixed(1)} {t.months}
@@ -429,7 +495,7 @@ export default function ExecutiveDashboard({ lang = 'es' }: Props) {
 
       {/* Colaboradores Top */}
       <section className={styles.section}>
-        <h2>{t.sectionCollaborators}</h2>
+        <h2 className={styles.tooltipHost} data-tooltip={t.helpCollaboratorsTable} tabIndex={0}>{t.sectionCollaborators}</h2>
         <div className={styles.collaboratorsTable}>
           <table>
             <thead>
@@ -462,7 +528,7 @@ export default function ExecutiveDashboard({ lang = 'es' }: Props) {
 
       {/* Tendencias */}
       <section className={styles.section}>
-        <h2>{t.sectionTrends}</h2>
+        <h2 className={styles.tooltipHost} data-tooltip={t.helpTrends} tabIndex={0}>{t.sectionTrends}</h2>
         <div className={styles.trendsGrid}>
           <div className={styles.trendCard}>
             <h3>{t.trendSubmitted}</h3>

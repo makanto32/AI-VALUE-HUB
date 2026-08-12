@@ -1,9 +1,12 @@
 """
 Service for finding related initiatives and matching similar ideas.
-Utiliza búsqueda semántica simple basada en palabras clave para detectar iniciativas relacionadas.
+Utiliza búsqueda semántica mejorada basada en palabras clave, sinónimos y análisis de intención
+para detectar iniciativas relacionadas incluso cuando el wording cambia.
 """
 
-from typing import List
+from typing import List, Dict, Tuple
+import re
+from difflib import SequenceMatcher
 from .models import (
     IdeaCase,
     RelatedInitiative,
@@ -82,9 +85,134 @@ INITIATIVE_CONTACTS = {
 }
 
 
+# Mapeo de sinónimos para detectar conceptos relacionados
+SEMANTIC_SYNONYMS = {
+    # Predicción y detección
+    "predicción": ["predictor", "predecir", "forecasting", "pronóstico", "estimación"],
+    "predictor": ["predicción", "predecir", "forecasting", "pronóstico", "estimación"],
+    "detección": ["detectar", "detector", "detection", "identificación", "descubrimiento"],
+    "fraude": ["fraude", "fraudulento", "fraud", "estafa", "engaño"],
+    "rotación": ["churn", "rotación", "abandono", "deserción", "fuga"],
+    "cliente": ["cliente", "customer", "usuario", "cuenta", "suscriptor"],
+    
+    # Análisis y evaluación
+    "análisis": ["análisis", "análitica", "analítica", "análitico", "scoring", "evaluación"],
+    "scoring": ["score", "puntuación", "calificación", "rating", "evaluación"],
+    "riesgo": ["riesgo", "risk", "peligro", "riesgos", "exposición"],
+    
+    # Automatización y procesos
+    "automatización": ["automatizar", "automático", "automatizado", "automation", "automatizacion"],
+    "onboarding": ["onboarding", "incorporación", "ingreso", "integración", "alta"],
+    "validación": ["validar", "validación", "validation", "verificación", "confirmación"],
+    
+    # Machine learning
+    "machine learning": ["ml", "machine learning", "aprendizaje automático", "ia", "inteligencia artificial"],
+    "ai": ["ai", "machine learning", "inteligencia artificial", "ml", "aprendizaje automático"],
+}
+
+
+def _normalize_text_for_semantic_comparison(text: str) -> str:
+    """
+    Normaliza texto para comparación semántica.
+    Convierte a lowercase, remove acentos, especiales, y palabras comunes.
+    """
+    if not text:
+        return ""
+    
+    # Convertir a minúsculas
+    text = text.lower().strip()
+    
+    # Remover acentos
+    text = re.sub(r'á', 'a', text)
+    text = re.sub(r'é', 'e', text)
+    text = re.sub(r'í', 'i', text)
+    text = re.sub(r'ó', 'o', text)
+    text = re.sub(r'ú', 'u', text)
+    
+    # Remover caracteres especiales pero mantener espacios
+    text = re.sub(r'[^\w\s]', '', text)
+    
+    # Palabras comunes a ignorar (stop words en español)
+    stop_words = {
+        'de', 'la', 'el', 'una', 'un', 'y', 'o', 'en', 'que', 'del', 'los', 'las',
+        'es', 'para', 'por', 'con', 'a', 'al', 'son', 'sido', 'ser', 'este',
+        'esta', 'estos', 'estas', 'sistema', 'nuevo', 'nueva', 'nueve',
+    }
+    
+    # Remover stop words
+    words = text.split()
+    words = [w for w in words if w not in stop_words and len(w) > 2]
+    
+    return ' '.join(words)
+
+
+def _apply_semantic_synonyms(text: str) -> List[str]:
+    """
+    Expande un texto con sinónimos semánticos.
+    Retorna lista de palabras clave semanticamente relacionadas.
+    """
+    text_lower = text.lower()
+    semantic_terms = set()
+    
+    # Buscar términos clave y agregar sus sinónimos
+    for base_term, synonyms in SEMANTIC_SYNONYMS.items():
+        if base_term in text_lower:
+            semantic_terms.add(base_term)
+            semantic_terms.update(synonyms)
+    
+    return list(semantic_terms)
+
+
+def _calculate_string_similarity(str1: str, str2: str) -> float:
+    """
+    Calcula similitud entre dos strings usando SequenceMatcher.
+    Retorna score de 0-100.
+    """
+    if not str1 or not str2:
+        return 0.0
+    
+    # Normalizar ambas strings
+    s1 = _normalize_text_for_semantic_comparison(str1)
+    s2 = _normalize_text_for_semantic_comparison(str2)
+    
+    if not s1 or not s2:
+        return 0.0
+    
+    # Usar SequenceMatcher para similitud estructural
+    ratio = SequenceMatcher(None, s1, s2).ratio()
+    return ratio * 100
+
+
+def _calculate_concept_overlap(text1: str, text2: str) -> float:
+    """
+    Calcula solapamiento de conceptos semánticos entre dos textos.
+    Usa sinónimos para detectar mismo tema con distinto wording.
+    Retorna score de 0-100.
+    """
+    if not text1 or not text2:
+        return 0.0
+    
+    # Obtener conceptos de ambos textos
+    concepts1 = set(_apply_semantic_synonyms(text1))
+    concepts2 = set(_apply_semantic_synonyms(text2))
+    
+    if not concepts1 or not concepts2:
+        return 0.0
+    
+    # Intersección y unión
+    intersection = len(concepts1 & concepts2)
+    union = len(concepts1 | concepts2)
+    
+    if union == 0:
+        return 0.0
+    
+    # Score basado en solapamiento de conceptos
+    return (intersection / union) * 100
+
+
 def _calculate_keyword_similarity(text1: str, text2: str) -> float:
     """
-    Calcula similitud simple basada en palabras clave compartidas.
+    Calcula similitud basada en palabras clave compartidas (método original).
     Retorna score de 0-100.
     """
     if not text1 or not text2:
@@ -144,14 +272,20 @@ def find_related_initiatives(
     new_idea: IdeaCase, all_ideas: List[IdeaCase]
 ) -> List[RelatedInitiative]:
     """
-    Encuentra iniciativas relacionadas a una idea nueva.
+    Encuentra iniciativas relacionadas a una idea nueva usando análisis semántico robusto.
+    
+    Combina 4 estrategias de detección:
+    1. Similitud de palabras clave directas (método original)
+    2. Similitud estructural de strings (SequenceMatcher)
+    3. Solapamiento de conceptos semánticos (sinónimos)
+    4. Análisis de intención en problem_statement
 
     Args:
         new_idea: Idea nueva ingresada
         all_ideas: Lista de todas las ideas en la BD
 
     Returns:
-        Lista de iniciativas relacionadas con score de similitud
+        Lista de iniciativas relacionadas con score de similitud mejorado
     """
     related = []
 
@@ -166,25 +300,74 @@ def find_related_initiatives(
         ]:
             continue
 
-        # Calcular similitud
-        title_sim = _calculate_keyword_similarity(
+        # ========== ESTRATEGIA 1: Similitud de palabras clave (original) ==========
+        title_keyword_sim = _calculate_keyword_similarity(
             new_idea.title, existing_idea.title
         )
-        problem_sim = _calculate_keyword_similarity(
+        problem_keyword_sim = _calculate_keyword_similarity(
             new_idea.problem_statement, existing_idea.problem_statement
         )
-        value_sim = _calculate_keyword_similarity(
+        value_keyword_sim = _calculate_keyword_similarity(
             new_idea.expected_value, existing_idea.expected_value
         )
-
-        # Score combinado (promedio ponderado)
-        similarity_score = (
-            title_sim * 0.4 + problem_sim * 0.4 + value_sim * 0.2
+        
+        # ========== ESTRATEGIA 2: Similitud estructural (SequenceMatcher) ==========
+        title_string_sim = _calculate_string_similarity(
+            new_idea.title, existing_idea.title
+        )
+        problem_string_sim = _calculate_string_similarity(
+            new_idea.problem_statement, existing_idea.problem_statement
+        )
+        
+        # ========== ESTRATEGIA 3: Solapamiento de conceptos semánticos ==========
+        title_concept_sim = _calculate_concept_overlap(
+            new_idea.title, existing_idea.title
+        )
+        problem_concept_sim = _calculate_concept_overlap(
+            new_idea.problem_statement, existing_idea.problem_statement
+        )
+        
+        # ========== ESTRATEGIA 4: Intención combinada ==========
+        # Combina title + problem para detectar intención global
+        intent_similarity = _calculate_concept_overlap(
+            f"{new_idea.title} {new_idea.problem_statement}",
+            f"{existing_idea.title} {existing_idea.problem_statement}"
         )
 
-        if similarity_score > 15:  # Threshold mínimo
-            # Determinar match reason
-            if title_sim > 50:
+        # ========== SCORE COMBINADO ==========
+        # Usa máximo entre estrategias para robustez ante cambios de wording
+        # Si hay alta similitud en CUALQUIER dimensión, se reporta
+        
+        title_sim = max(title_keyword_sim, title_string_sim, title_concept_sim)
+        problem_sim = max(problem_keyword_sim, problem_string_sim, problem_concept_sim)
+        value_sim = value_keyword_sim
+        
+        # Score final con pesos ajustados (problem es lo más importante)
+        similarity_score = (
+            title_sim * 0.3 + 
+            problem_sim * 0.45 + 
+            value_sim * 0.15 +
+            intent_similarity * 0.10
+        )
+
+        # THRESHOLD CRÍTICO: si hay muy alta similitud en problema o intención,
+        # potencial duplicidad incluso con bajo score general
+        is_potential_duplicate = (
+            problem_sim > 60 or  # Problema muy similar
+            intent_similarity > 70 or  # Intención muy similar
+            (title_sim > 50 and problem_sim > 30)  # Título + algún problema similar
+        )
+        
+        if similarity_score > 12 or is_potential_duplicate:
+            # Determinar match reason basado en qué dimensión fue más similar
+            if is_potential_duplicate:
+                if problem_sim > 60:
+                    match_reason = "Resuelve problema muy similar (posible duplicidad)"
+                elif intent_similarity > 70:
+                    match_reason = "Intención similar con distinto wording (posible duplicidad)"
+                else:
+                    match_reason = "Potencial duplicidad detectada"
+            elif title_sim > 50:
                 match_reason = "Titulo muy similar"
             elif problem_sim > 50:
                 match_reason = "Resuelve problema similar"

@@ -4,11 +4,9 @@ Seed demo ideas into the AIHUB SQLite database.
 Genera ideas persistentes de demostración en diferentes etapas del flujo.
 """
 
-import json
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from uuid import uuid4
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent / "api"))
@@ -37,6 +35,13 @@ from app.store import idea_store, company_context_store, CompanyContext
 DEMO_TENANT = "contoso-demo"
 DEMO_USER_ID = "demo-user-001"
 DEMO_USER_NAME = "Demo User"
+
+# Usuarios reales de demo (deben coincidir con AuthStore en api/app/store.py)
+# para que las ideas aparezcan en /ideas/mine de cada sesion de analista.
+FINANZAS_USER_ID = "user-fin-01"
+FINANZAS_USER_NAME = "Ana Finanzas"
+RIESGO_USER_ID = "user-risk-02"
+RIESGO_USER_NAME = "Rafa Riesgo"
 
 
 def create_context_snapshot() -> ContextSnapshot:
@@ -70,10 +75,10 @@ def create_context_snapshot() -> ContextSnapshot:
 def create_demo_idea_1_draft():
     """Idea en estado DRAFT - Recién capturada."""
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-fraud-draft",
         tenant_id=DEMO_TENANT,
-        owner_user_id=DEMO_USER_ID,
-        owner_display_name=DEMO_USER_NAME,
+        owner_user_id=RIESGO_USER_ID,
+        owner_display_name=RIESGO_USER_NAME,
         title="Automatización de Detección de Fraude en Transacciones Retail",
         canonical_language="es",
         supported_languages=["es", "en"],
@@ -133,10 +138,10 @@ def create_demo_idea_2_needs_clarification():
     ]
 
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-kyc-clarification",
         tenant_id=DEMO_TENANT,
-        owner_user_id=DEMO_USER_ID,
-        owner_display_name=DEMO_USER_NAME,
+        owner_user_id=FINANZAS_USER_ID,
+        owner_display_name=FINANZAS_USER_NAME,
         title="Optimización de Procesos KYC con Análisis de Documentos IA",
         canonical_language="es",
         supported_languages=["es", "en"],
@@ -207,10 +212,10 @@ def create_demo_idea_3_business_viable():
     )
 
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-chatbot-viable",
         tenant_id=DEMO_TENANT,
-        owner_user_id=DEMO_USER_ID,
-        owner_display_name=DEMO_USER_NAME,
+        owner_user_id=FINANZAS_USER_ID,
+        owner_display_name=FINANZAS_USER_NAME,
         title="Chatbot de Soporte al Cliente con Comprensión Conversacional",
         canonical_language="es",
         supported_languages=["es", "en"],
@@ -314,10 +319,10 @@ def create_demo_idea_4_technical_validated():
     )
 
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-credit-risk-technical",
         tenant_id=DEMO_TENANT,
-        owner_user_id=DEMO_USER_ID,
-        owner_display_name=DEMO_USER_NAME,
+        owner_user_id=RIESGO_USER_ID,
+        owner_display_name=RIESGO_USER_NAME,
         title="Análisis Predictivo de Riesgo de Crédito en Onboarding",
         canonical_language="es",
         supported_languages=["es", "en"],
@@ -375,10 +380,10 @@ def create_demo_idea_5_rejected():
     )
 
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-investment-rejected",
         tenant_id=DEMO_TENANT,
-        owner_user_id=DEMO_USER_ID,
-        owner_display_name=DEMO_USER_NAME,
+        owner_user_id=FINANZAS_USER_ID,
+        owner_display_name=FINANZAS_USER_NAME,
         title="Automatización de Asesoría de Inversión Personalizada",
         canonical_language="es",
         supported_languages=["es", "en"],
@@ -423,10 +428,10 @@ def create_demo_idea_5_rejected():
 def create_demo_idea_6_funding():
     """Idea en estado FUNDING - Aprobada, buscando financiamiento."""
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-credit-scoring-funding",
         tenant_id=DEMO_TENANT,
-        owner_user_id="team-riesgo",
-        owner_display_name="Carlos Mendez (Risk Team Lead)",
+        owner_user_id=RIESGO_USER_ID,
+        owner_display_name=RIESGO_USER_NAME,
         title="Modelo de Scoring de Riesgo Crediticio Avanzado",
         canonical_language="es",
         supported_languages=["es", "en"],
@@ -506,7 +511,7 @@ def create_demo_idea_6_funding():
 def create_demo_idea_7_production():
     """Idea en PRODUCCIÓN - Ya desplegada y operativa."""
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-onboarding-production",
         tenant_id=DEMO_TENANT,
         owner_user_id="team-operaciones",
         owner_display_name="Maria Rodriguez (Operations Director)",
@@ -603,7 +608,7 @@ def create_demo_idea_7_production():
 def create_demo_idea_8_production():
     """Otra idea en PRODUCCIÓN - Sistema de alertas de fraude."""
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-fraud-alerts-production",
         tenant_id=DEMO_TENANT,
         owner_user_id="team-seguridad",
         owner_display_name="Roberto Gonzalez (Security Chief)",
@@ -695,48 +700,109 @@ def create_demo_idea_8_production():
         updated_at=datetime.utcnow() - timedelta(days=20),
     )
 
-    """Idea RECHAZADA - Completó ciclo pero no aprobada."""
-    from app.models import RejectionInfo, RejectionPhase
 
-    rejection = RejectionInfo(
-        phase=RejectionPhase.business,
-        reason="No alineado con estrategia actual. Prohibido automatizar decisiones de crédito sin supervisión humana en nuestro modelo de riesgo bajo.",
-    )
-
+def create_demo_idea_9_english_draft():
+    """English version: Idea in DRAFT state."""
     return IdeaCase(
-        idea_id=str(uuid4()),
+        idea_id="demo-seed-payment-fraud-en-draft",
         tenant_id=DEMO_TENANT,
-        owner_user_id=DEMO_USER_ID,
-        owner_display_name=DEMO_USER_NAME,
-        title="Automatización de Asesoría de Inversión Personalizada",
+        owner_user_id=FINANZAS_USER_ID,
+        owner_display_name=FINANZAS_USER_NAME,
+        title="Real-Time Payment Fraud Prevention System",
         canonical_language="es",
         supported_languages=["es", "en"],
-        source_language="es",
-        detected_language="es",
-        response_language="es",
-        original_text="Sistema para generar recomendaciones de inversión automáticas basadas en perfil del cliente.",
-        canonical_summary="Recomendador automático de productos de inversión.",
-        current_stage=IdeaStage.business_validation,
-        status=IdeaStatus.rejected,
-        problem_statement="Agentes de inversión pasan mucho tiempo en consultoría. Podríamos automatizar recomendaciones.",
-        expected_value="Reducir tiempo de consultoría, aumentar throughput de asesoría.",
-        affected_users=["investment-advisors", "high-net-worth-clients"],
+        source_language="en",
+        detected_language="en",
+        response_language="en",
+        original_text="We want to use AI to prevent payment fraud across all channels in real-time.",
+        canonical_summary="AI-powered payment fraud prevention system for real-time threat detection.",
+        current_stage=IdeaStage.idea_intake,
+        status=IdeaStatus.draft,
+        problem_statement="Our current fraud detection system has a 24-hour lag and misses sophisticated fraud patterns. We need real-time, adaptive fraud prevention.",
+        expected_value="Reduce payment fraud losses by 50%, decrease fraud detection latency to < 100ms, improve customer trust.",
+        affected_users=["payments-team", "fraud-analysts", "banking-customers"],
         context_snapshot=create_context_snapshot(),
         business_validation=BusinessValidation(
-            value_score=70,
-            risk_score=85,
+            value_score=0,
+            risk_score=0,
             assumptions=[],
             open_questions=[],
-            context_signals=["Presión regulatoria en asesoría automatizada"],
+            context_signals=[],
             score_breakdown=[],
-            recommendation="Rechazar - Incumple restricciones regulatorias.",
+            recommendation="Pending initial validation",
         ),
         technical_questions=[],
         technical_interactions=[],
         technical_validation=None,
         architecture_package=None,
         response_composition=None,
-        rejection=rejection,
+        rejection=None,
+        deployment_status=DeploymentStatus.development,
+        monthly_token_quota_base=250000,
+        extra_quota_current_month=0,
+        quota_month="",
+        quota_adjustments=[],
+        clarification_questions=[],
+        clarification_interactions=[],
+        created_at=datetime.utcnow() - timedelta(days=3),
+        updated_at=datetime.utcnow() - timedelta(days=3),
+    )
+
+
+def create_demo_idea_10_english_viable():
+    """English version: Idea VIABLE DE NEGOCIO - Ready for editing."""
+    business_val = BusinessValidation(
+        value_score=85,
+        risk_score=30,
+        assumptions=[
+            "Historical transaction data for 3+ years available",
+            "Integration with payment gateway APIs in 6 weeks",
+            "Team adoption within 2 months",
+        ],
+        open_questions=[
+            "Which payment channels to include in MVP?",
+            "Data retention and compliance requirements?",
+        ],
+        context_signals=[
+            "Rising fraud trend in industry",
+            "Regulatory pressure on fraud prevention",
+            "Budget approved for H2",
+        ],
+        score_breakdown=[
+            "Strategic alignment: 9/10",
+            "Operational feasibility: 8/10",
+            "Financial impact: 9/10",
+            "Technical risk: 6/10",
+        ],
+        recommendation="Proceed to technical validation with proposed architecture.",
+    )
+
+    return IdeaCase(
+        idea_id="demo-seed-anomaly-detection-en-viable",
+        tenant_id=DEMO_TENANT,
+        owner_user_id=RIESGO_USER_ID,
+        owner_display_name=RIESGO_USER_NAME,
+        title="Anomaly Detection for Account Takeover Prevention",
+        canonical_language="es",
+        supported_languages=["es", "en"],
+        source_language="en",
+        detected_language="en",
+        response_language="en",
+        original_text="Implement ML-based anomaly detection to identify and prevent account takeover attacks.",
+        canonical_summary="ML anomaly detection for protecting customer accounts from unauthorized access.",
+        current_stage=IdeaStage.business_validation,
+        status=IdeaStatus.business_viable,
+        problem_statement="Account takeover attacks are increasing. Current detection methods are reactive and miss 15% of attacks. We need proactive, behavior-based detection.",
+        expected_value="Reduce account takeover incidents by 85%, improve customer security confidence, lower fraud losses.",
+        affected_users=["security-team", "customer-support", "banking-customers"],
+        context_snapshot=create_context_snapshot(),
+        business_validation=business_val,
+        technical_questions=[],
+        technical_interactions=[],
+        technical_validation=None,
+        architecture_package=None,
+        response_composition=None,
+        rejection=None,
         deployment_status=DeploymentStatus.development,
         monthly_token_quota_base=250000,
         extra_quota_current_month=0,
@@ -745,7 +811,7 @@ def create_demo_idea_8_production():
         clarification_questions=[],
         clarification_interactions=[],
         created_at=datetime.utcnow() - timedelta(days=10),
-        updated_at=datetime.utcnow() - timedelta(days=2),
+        updated_at=datetime.utcnow() - timedelta(days=1),
     )
 
 
@@ -762,6 +828,8 @@ def seed_demo_ideas():
         create_demo_idea_6_funding(),
         create_demo_idea_7_production(),
         create_demo_idea_8_production(),
+        create_demo_idea_9_english_draft(),
+        create_demo_idea_10_english_viable(),
     ]
 
     for i, idea in enumerate(ideas, 1):
@@ -779,12 +847,13 @@ def seed_demo_ideas():
             DeploymentStatus.production: "{PROD}",
         }.get(idea.deployment_status, "{???}")
         
-        print(f"  {i}. {status_label} {deployment_label} - {idea.title}")
+        print(f"  {i}. {status_label} {deployment_label} - {idea.title} ({idea.source_language.upper()})")
 
     print(f"\n[+] Se crearon {len(ideas)} ideas de demostracion persistentes")
-    print("[*] Estados: 1 Draft + 1 Aclaracion + 2 Viable + 1 Rechazada + 1 Funding + 2 Produccion")
+    print("[*] Estados: 2 Draft + 1 Aclaracion + 3 Viable + 1 Rechazada + 1 Funding + 2 Produccion")
+    print("[*] Idiomas: 8 ideas en Español + 2 ideas en Inglés")
     print("[*] Base de datos: data/aihub.db")
-    print("[+] Las ideas apareceran en la interfaz de demostracion\n")
+    print("[+] Las ideas apareceran en la interfaz de demostracion en su idioma original\n")
 
 
 if __name__ == "__main__":
