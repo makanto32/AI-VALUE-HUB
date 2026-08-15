@@ -1033,17 +1033,13 @@ function App() {
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
   const [activeClarificationIdeaId, setActiveClarificationIdeaId] = useState("");
   const [activeTechnicalIdeaId, setActiveTechnicalIdeaId] = useState("");
-  const [activeAgentChatIdeaId, setActiveAgentChatIdeaId] = useState("");
   const [clarificationQuestions, setClarificationQuestions] = useState([]);
   const [clarificationAnswers, setClarificationAnswers] = useState({});
   const [technicalQuestions, setTechnicalQuestions] = useState([]);
   const [technicalAnswers, setTechnicalAnswers] = useState({});
   const [technicalConversation, setTechnicalConversation] = useState([]);
+  const [collapsedQueueItems, setCollapsedQueueItems] = useState(new Set());
   const [technicalDraft, setTechnicalDraft] = useState("");
-  const [agentChatMessages, setAgentChatMessages] = useState({});
-  const [agentChatInput, setAgentChatInput] = useState("");
-  const [agentApprovalDrafts, setAgentApprovalDrafts] = useState({});
-  const [showAgentApprovalDialog, setShowAgentApprovalDialog] = useState("");
 
   const [error, setError] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState(null);
@@ -1228,6 +1224,16 @@ function App() {
     }
   }
 
+  function toggleQueueItemCollapse(ideaId) {
+    const newCollapsed = new Set(collapsedQueueItems);
+    if (newCollapsed.has(ideaId)) {
+      newCollapsed.delete(ideaId);
+    } else {
+      newCollapsed.add(ideaId);
+    }
+    setCollapsedQueueItems(newCollapsed);
+  }
+
   async function handleTechnicalAction(ideaId, path, method) {
     try {
       const response = await apiFetch(`/ideas/${ideaId}/${path}`, { method });
@@ -1300,86 +1306,6 @@ function App() {
       link.remove();
       window.URL.revokeObjectURL(url);
       setError("");
-    } catch (err) {
-      setError(err.message || t.errorUnexpected);
-    }
-  }
-
-  async function handleTechnicalChat(ideaId) {
-    if (!agentChatInput.trim()) return;
-    
-    try {
-      const response = await apiFetch(`/ideas/${ideaId}/technical-chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: agentChatInput.trim(),
-          question_type: "technical_clarification"
-        }),
-      });
-      
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        setError(body.detail || t.errorUnexpected);
-        return;
-      }
-      
-      const result = await response.json();
-      
-      // Store chat history
-      setAgentChatMessages((prev) => ({
-        ...prev,
-        [ideaId]: [
-          ...(prev[ideaId] || []),
-          {
-            type: "user",
-            text: agentChatInput.trim(),
-            timestamp: new Date().toISOString()
-          },
-          {
-            type: "agent",
-            text: result.agent_response,
-            questions: result.agent_questions,
-            timestamp: result.created_at
-          }
-        ]
-      }));
-      
-      setAgentChatInput("");
-      setError("");
-      await loadTechnicalQueue();
-    } catch (err) {
-      setError(err.message || t.errorUnexpected);
-    }
-  }
-
-  async function handleAgentApproval(ideaId) {
-    if (!agentApprovalDrafts[ideaId]?.trim()) {
-      alert("Por favor escribe un resumen de aprobación");
-      return;
-    }
-    
-    try {
-      const response = await apiFetch(`/ideas/${ideaId}/agent-approval`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          summary: agentApprovalDrafts[ideaId].trim(),
-          confidence_level: "high",
-          recommendations: []
-        }),
-      });
-      
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        setError(body.detail || t.errorUnexpected);
-        return;
-      }
-      
-      setShowAgentApprovalDialog("");
-      setAgentApprovalDrafts((prev) => ({ ...prev, [ideaId]: "" }));
-      setError("");
-      await loadTechnicalQueue();
     } catch (err) {
       setError(err.message || t.errorUnexpected);
     }
@@ -1871,6 +1797,17 @@ function App() {
     const hasScore = Number.isFinite(Number(idea?.technical_validation?.feasibility_score));
     const hasChat = (idea?.technical_interactions || []).length > 0;
     return hasScore && (hasChat || Boolean(idea?.architecture_package));
+  }
+
+  function needsTechnicalClarification(idea) {
+    // The technical agent already ran its automatic first-pass review as soon as
+    // the idea became business_viable. A manual chat is only needed when the
+    // agent explicitly flags the idea as "clarify" (agent_approved stays false).
+    return (
+      idea?.status === "business_viable" &&
+      idea?.technical_validation?.recommendation === "clarify" &&
+      !idea?.agent_approved
+    );
   }
 
   function normalizeForSimilarity(value) {
@@ -2626,8 +2563,13 @@ function App() {
         setClarificationQuestions([]);
         setClarificationAnswers({});
       }
-      if (updatedIdea.status === "business_viable" && !hasTechnicalValidation(updatedIdea)) {
-        await openTechnicalPanel(updatedIdea);
+      if (updatedIdea.status === "business_viable") {
+        // Refresh so the automatic technical agent review (which runs on GET) is reflected.
+        const refreshedResponse = await apiFetch(`/ideas/${updatedIdea.idea_id}`);
+        const refreshedIdea = refreshedResponse.ok ? await refreshedResponse.json() : updatedIdea;
+        if (needsTechnicalClarification(refreshedIdea)) {
+          await openTechnicalPanel(refreshedIdea);
+        }
       }
       setClarificationFeedback(
         updatedIdea.status === "rejected"
@@ -3268,151 +3210,112 @@ function App() {
                     return (
                     <li key={idea.idea_id} style={{ "--delay": `${index * 70}ms` }}>
                       <div className="item-top">
+                        <button 
+                          type="button" 
+                          onClick={() => toggleQueueItemCollapse(idea.idea_id)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "0 8px 0 0",
+                            fontSize: "16px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            color: "#555"
+                          }}
+                          title={collapsedQueueItems.has(idea.idea_id) ? "Expandir" : "Colapsar"}
+                        >
+                          {collapsedQueueItems.has(idea.idea_id) ? "▶ " : "▼ "}
+                        </button>
                         <h3>{idea.title}</h3>
                         <span className="pill pill-info">{t.technicalReviewPending}</span>
                       </div>
-                      <p className="meta">{t.owner}: {idea.owner_display_name}</p>
-                      <p className="meta">{t.problemStatement}: {idea.problem_statement.substring(0, 100)}...</p>
-                      <p className="meta">{t.expectedValue}: {idea.expected_value.substring(0, 100)}...</p>
-                      {idea.business_validation && (
-                        <p className="meta">
-                          {t.scores}: {idea.business_validation.value_score} | {idea.business_validation.risk_score}
-                        </p>
-                      )}
-                      {economics && (
-                        <div className={`economics-panel economics-${economics.verdict}`}>
-                          <div className="economics-metrics">
-                            <div>
-                              <p className="economics-label">{t.economicsMonthlyCost}</p>
-                              <p className="economics-value">{formatUsd(economics.estimated_monthly_cost_usd)}</p>
-                            </div>
-                            <div>
-                              <p className="economics-label">{t.economicsMonthlySavings}</p>
-                              <p className="economics-value">{formatUsd(economics.estimated_monthly_savings_usd)}</p>
-                            </div>
-                            <div>
-                              <p className="economics-label">{t.economicsRatio}</p>
-                              <p className="economics-value">
-                                {economics.value_to_cost_ratio !== null && economics.value_to_cost_ratio !== undefined
-                                  ? `${economics.value_to_cost_ratio}x`
-                                  : "-"}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="economics-label">{t.economicsNetMonthly}</p>
-                              <p className="economics-value">{formatUsd(economics.net_monthly_value_usd)}</p>
-                            </div>
-                          </div>
-                          <p className="meta">
-                            <span className={`pill ${economicsPillClass(economics.verdict)}`}>
-                              {t.economicsVerdict[economics.verdict] || economics.verdict}
-                            </span>
-                          </p>
-                          <p className="meta">{economics.message}</p>
-                          <details>
-                            <summary className="meta">{t.economicsAssumptions}</summary>
-                            {(economics.assumptions || []).map((assumption, idx) => (
-                              <p className="meta" key={`eco-${idea.idea_id}-${idx}`}>{assumption}</p>
-                            ))}
-                          </details>
-                        </div>
-                      )}
-
-                      {/* Approval Status Section */}
-                      <div className="approval-status" style={{ marginTop: 16, padding: "12px", backgroundColor: "#f5f5f5", borderRadius: "4px" }}>
-                        <p style={{ marginBottom: 8, fontWeight: 500 }}>
-                          {t.agentApproval}:
-                          <span style={{ marginLeft: 8 }}>
-                            {idea.agent_approved ? "✓ Aprobado" : "○ Pendiente"}
-                          </span>
-                        </p>
-                        <p style={{ marginBottom: 12, fontWeight: 500 }}>
-                          {t.technicalApprove} (Humano):
-                          <span style={{ marginLeft: 8 }}>
-                            {idea.human_approved ? "✓ Aprobado" : "○ Pendiente"}
-                          </span>
-                        </p>
-                      </div>
-
-                      {/* Technical Chat Section */}
-                      {activeAgentChatIdeaId === idea.idea_id && (
-                        <div className="chat-section" style={{ marginTop: 12, padding: "12px", backgroundColor: "#f9f9f9", borderRadius: "4px", border: "1px solid #ddd" }}>
-                          <h4>{t.technicalChat}</h4>
-                          <div className="chat-history" style={{ maxHeight: "200px", overflowY: "auto", marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #ddd" }}>
-                            {(agentChatMessages[idea.idea_id] || []).map((msg, idx) => (
-                              <div key={idx} style={{ marginBottom: 8, textAlign: msg.type === "user" ? "right" : "left" }}>
-                                <div style={{ 
-                                  display: "inline-block", 
-                                  maxWidth: "80%",
-                                  padding: "8px 12px", 
-                                  backgroundColor: msg.type === "user" ? "#007bff" : "#e9ecef",
-                                  color: msg.type === "user" ? "white" : "black",
-                                  borderRadius: "4px",
-                                  fontSize: "12px"
-                                }}>
-                                  <p style={{ margin: 0 }}>{msg.text}</p>
-                                  {msg.questions && msg.questions.length > 0 && (
-                                    <div style={{ marginTop: 8, fontSize: "11px", opacity: 0.9 }}>
-                                      <p style={{ margin: "4px 0", fontWeight: "bold" }}>Preguntas:</p>
-                                      {msg.questions.map((q, qi) => (
-                                        <p key={qi} style={{ margin: "2px 0" }}>• {q}</p>
-                                      ))}
-                                    </div>
-                                  )}
+                      {!collapsedQueueItems.has(idea.idea_id) && (
+                        <>
+                          <p className="meta">{t.owner}: {idea.owner_display_name}</p>
+                          <p className="meta">{t.problemStatement}: {idea.problem_statement.substring(0, 100)}...</p>
+                          <p className="meta">{t.expectedValue}: {idea.expected_value.substring(0, 100)}...</p>
+                          {idea.business_validation && (
+                            <p className="meta">
+                              {t.scores}: {idea.business_validation.value_score} | {idea.business_validation.risk_score}
+                            </p>
+                          )}
+                          {economics && (
+                            <div className={`economics-panel economics-${economics.verdict}`}>
+                              <div className="economics-metrics">
+                                <div>
+                                  <p className="economics-label">{t.economicsMonthlyCost}</p>
+                                  <p className="economics-value">{formatUsd(economics.estimated_monthly_cost_usd)}</p>
+                                </div>
+                                <div>
+                                  <p className="economics-label">{t.economicsMonthlySavings}</p>
+                                  <p className="economics-value">{formatUsd(economics.estimated_monthly_savings_usd)}</p>
+                                </div>
+                                <div>
+                                  <p className="economics-label">{t.economicsRatio}</p>
+                                  <p className="economics-value">
+                                    {economics.value_to_cost_ratio !== null && economics.value_to_cost_ratio !== undefined
+                                      ? `${economics.value_to_cost_ratio}x`
+                                      : "-"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="economics-label">{t.economicsNetMonthly}</p>
+                                  <p className="economics-value">{formatUsd(economics.net_monthly_value_usd)}</p>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                              type="text"
-                              placeholder={t.technicalChatPlaceholder}
-                              value={agentChatInput}
-                              onChange={(e) => setAgentChatInput(e.target.value)}
-                              onKeyPress={(e) => e.key === "Enter" && handleTechnicalChat(idea.idea_id)}
-                              style={{ flex: 1, padding: "8px", fontSize: "12px", borderRadius: "4px", border: "1px solid #ccc" }}
-                            />
-                            <button
-                              type="button"
-                              className="btn-quiet"
-                              onClick={() => handleTechnicalChat(idea.idea_id)}
-                              style={{ padding: "8px 12px", fontSize: "12px" }}
-                            >
-                              {t.technicalSendMessage}
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                              <p className="meta">
+                                <span className={`pill ${economicsPillClass(economics.verdict)}`}>
+                                  {t.economicsVerdict[economics.verdict] || economics.verdict}
+                                </span>
+                              </p>
+                              <p className="meta">{economics.message}</p>
+                              <details>
+                                <summary className="meta">{t.economicsAssumptions}</summary>
+                                {(economics.assumptions || []).map((assumption, idx) => (
+                                  <p className="meta" key={`eco-${idea.idea_id}-${idx}`}>{assumption}</p>
+                                ))}
+                              </details>
+                            </div>
+                          )}
 
-                      {/* Agent Approval Dialog */}
-                      {showAgentApprovalDialog === idea.idea_id && (
-                        <div className="approval-dialog" style={{ marginTop: 12, padding: "12px", backgroundColor: "#fff3cd", borderRadius: "4px", border: "1px solid #ffc107" }}>
-                          <h4>{t.agentApprovalSummary}</h4>
-                          <textarea
-                            placeholder={t.agentApprovalPlaceholder}
-                            value={agentApprovalDrafts[idea.idea_id] || ""}
-                            onChange={(e) => setAgentApprovalDrafts((prev) => ({ ...prev, [idea.idea_id]: e.target.value }))}
-                            style={{ width: "100%", height: "80px", padding: "8px", fontSize: "12px", borderRadius: "4px", border: "1px solid #ddd", marginBottom: 8 }}
-                          />
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button
-                              type="button"
-                              className="btn-approve"
-                              onClick={() => handleAgentApproval(idea.idea_id)}
-                              style={{ flex: 1 }}
-                            >
-                              Confirmar aprobación
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-quiet"
-                              onClick={() => setShowAgentApprovalDialog("")}
-                              style={{ flex: 1 }}
-                            >
-                              Cancelar
-                            </button>
+                          {/* Automatic agent review status */}
+                          {(() => {
+                            const recommendation = idea.technical_validation?.recommendation;
+                            const isClarifying = recommendation === "clarify" && !idea.agent_approved;
+                            return (
+                              <div className="approval-status" style={{ marginTop: 16, padding: "12px", backgroundColor: "#f5f5f5", borderRadius: "4px" }}>
+                                <p style={{ marginBottom: 6, fontWeight: 500 }}>
+                                  Agente de negocio: <span style={{ marginLeft: 8 }}>✓ Aprobado</span>
+                                </p>
+                            <p style={{ marginBottom: 6, fontWeight: 500 }}>
+                              Agente tecnico:
+                              <span style={{ marginLeft: 8 }}>
+                                {idea.agent_approved
+                                  ? "✓ Aprobado automaticamente"
+                                  : isClarifying
+                                  ? "⏳ Esperando aclaracion del equipo de negocio"
+                                  : "○ Analizando..."}
+                              </span>
+                            </p>
+                            {idea.agent_approval_summary && (
+                              <p className="meta" style={{ marginBottom: 8 }}>{idea.agent_approval_summary}</p>
+                            )}
+                            {isClarifying && (
+                              <p className="meta" style={{ marginBottom: 8 }}>
+                                El agente tecnico detecto puntos a aclarar; el propietario de la idea debe responder las preguntas guiadas antes de continuar.
+                              </p>
+                            )}
+                            <p style={{ marginBottom: 0, fontWeight: 500 }}>
+                              Supervision humana final:
+                              <span style={{ marginLeft: 8 }}>
+                                {idea.human_approved ? "✓ Aprobado" : "○ Pendiente"}
+                              </span>
+                            </p>
                           </div>
-                        </div>
+                        );
+                      })()}
+                        </>
                       )}
 
                       <div className="action-row action-row-compact">
@@ -3420,30 +3323,8 @@ function App() {
                           {t.viewInFocus}
                         </button>
 
-                        {/* Chat Button */}
-                        {!idea.agent_approved && (
-                          <button
-                            type="button"
-                            className="btn-quiet"
-                            onClick={() => setActiveAgentChatIdeaId(idea.idea_id)}
-                          >
-                            {t.technicalChat}
-                          </button>
-                        )}
-
-                        {/* Agent Approval Button */}
-                        {!idea.agent_approved && (
-                          <button
-                            type="button"
-                            className="btn-quiet"
-                            onClick={() => setShowAgentApprovalDialog(idea.idea_id)}
-                          >
-                            {t.agentApproveButton}
-                          </button>
-                        )}
-
-                        {/* Human Approval Button - Only if agent approved */}
-                        {idea.agent_approved && (
+                        {/* Human Approval Button - Only if both agentic validations (business + technical) already passed */}
+                        {idea.agent_approved ? (
                           <button
                             type="button"
                             className="btn-approve"
@@ -3451,15 +3332,12 @@ function App() {
                           >
                             {t.technicalApprove}
                           </button>
-                        )}
-
-                        {/* If agent approval is required but not done, show disabled approve button */}
-                        {!idea.agent_approved && (
+                        ) : (
                           <button
                             type="button"
                             className="btn-quiet"
                             disabled
-                            title={t.agentApprovalRequired}
+                            title="Disponible cuando ambas validaciones agenticas (negocio y tecnica) esten completas"
                           >
                             {t.technicalApprove} ({t.agentApprovalRequired})
                           </button>
@@ -3751,7 +3629,7 @@ function App() {
                         {t.clarifyWithAgent}
                       </button>
                     )}
-                    {selectedIdea.status === "business_viable" && !hasTechnicalValidation(selectedIdea) && (
+                    {needsTechnicalClarification(selectedIdea) && (
                       <button
                         type="button"
                         onClick={() => openTechnicalPanel(selectedIdea)}
@@ -3813,7 +3691,7 @@ function App() {
                     </form>
                   )}
 
-                  {selectedIdea.status === "business_viable" && !hasTechnicalValidation(selectedIdea) && activeTechnicalIdeaId === selectedIdea.idea_id && technicalQuestions.length > 0 && (
+                  {selectedIdea.status === "business_viable" && needsTechnicalClarification(selectedIdea) && activeTechnicalIdeaId === selectedIdea.idea_id && technicalQuestions.length > 0 && (
                     <div className="clarification-form technical-chat-shell">
                       <div className="card-header">
                         <h2>{t.technicalPanelTitle}</h2>
@@ -3887,17 +3765,28 @@ function App() {
                       {selectedIdea.technical_validation.blockers?.length > 0 && (
                         <p className="meta">{t.technicalBlockers}: {selectedIdea.technical_validation.blockers.join(" | ")}</p>
                       )}
+                      {selectedIdea.agent_approved && (
+                        <p className="meta">
+                          ✓ Ambas validaciones agenticas (negocio y tecnica) fueron aprobadas. Pendiente supervision humana final para habilitar el paquete de arquitectura.
+                        </p>
+                      )}
                     </>
                   )}
 
                   {hasTechnicalValidation(selectedIdea) && !selectedIdea.architecture_package && selectedIdea.status !== "rejected" && (
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateArchitecture(selectedIdea.idea_id)}
-                      disabled={generatingArchitecture}
-                    >
-                      {generatingArchitecture ? t.generatingArchitecture : t.generateArchitecture}
-                    </button>
+                    selectedIdea.human_approved ? (
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateArchitecture(selectedIdea.idea_id)}
+                        disabled={generatingArchitecture}
+                      >
+                        {generatingArchitecture ? t.generatingArchitecture : t.generateArchitecture}
+                      </button>
+                    ) : (
+                      <p className="meta">
+                        El paquete de arquitectura se habilitara con las recomendaciones, el abordaje sugerido y los servicios propuestos cuando el equipo tecnico otorgue la aprobacion humana final.
+                      </p>
+                    )
                   )}
 
                   {selectedIdea.architecture_package && (
