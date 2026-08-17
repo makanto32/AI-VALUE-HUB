@@ -694,26 +694,189 @@ def _apply_business_decision(idea: IdeaCase, request: BusinessIntakeRequest, con
     return idea
 
 
-def _ensure_technical_chat_ready(idea: IdeaCase) -> tuple[IdeaCase, bool]:
+def _auto_infer_technical_request(idea: IdeaCase) -> TechnicalValidationRequest:
+    """Best-effort technical scope inferred by the agent directly from the business
+    context (problem statement, expected value, context signals, regulatory
+    constraints). Used to run an automatic first-pass technical review as soon as
+    an idea reaches business_viable, without requiring a manual chat upfront."""
+    text = f"{idea.problem_statement} {idea.expected_value}".lower()
+    context_signals = [str(item).lower() for item in (idea.business_validation.context_signals or [])]
+    regulatory: list[str] = []
+    if idea.context_snapshot is not None:
+        regulatory = [str(item).lower() for item in idea.context_snapshot.regulatory_constraints]
+
+    systems_in_scope: list[str] = []
+    if any(keyword in text for keyword in ["core", "erp", "crm", "banking", "legado", "legacy"]):
+        systems_in_scope.append("sistema core / de registro")
+    if any(keyword in text for keyword in ["api", "integracion", "integration", "bus de eventos", "event bus"]):
+        systems_in_scope.append("integraciones via API")
+    if not systems_in_scope:
+        systems_in_scope.append("sistema principal identificado en el problema de negocio")
+
+    data_sources: list[str] = []
+    if any(keyword in text for keyword in ["cliente", "customer", "pii", "financ", "credito", "credit"]):
+        data_sources.append("datos de cliente / financieros")
+    if any(keyword in text for keyword in ["transacc", "transaction"]):
+        data_sources.append("datos transaccionales")
+    if not data_sources:
+        data_sources.append("datos operativos generales del proceso")
+
+    integration_constraints: list[str] = list(context_signals[:2])
+
+    security_requirements: list[str] = []
+    if regulatory or any(keyword in text for keyword in ["pii", "compliance", "regulatorio", "kyc", "gdpr"]):
+        security_requirements.extend(["cifrado", "control de acceso", "auditoria"])
+    else:
+        security_requirements.append("controles base por definir")
+
+    timeline_weeks = 10 if idea.business_validation.risk_score >= 70 else 8
+
+    return TechnicalValidationRequest(
+        systems_in_scope=systems_in_scope,
+        data_sources=data_sources,
+        integration_constraints=integration_constraints,
+        security_requirements=security_requirements,
+        timeline_weeks=timeline_weeks,
+        notes="Evaluacion tecnica automatica generada por el agente a partir del contexto de negocio.",
+    )
+
+
+def _build_auto_technical_summary(idea: IdeaCase, technical: TechnicalValidation) -> str:
+    lang = _resolve_language(idea.response_language)
+    if technical.recommendation == "continue":
+        return _msg(
+            lang,
+            f"Revision automatica del agente tecnico: no se detectaron bloqueos (factibilidad={technical.feasibility_score}). "
+            "Ambas validaciones agenticas (negocio y tecnica) fueron aprobadas. La idea queda lista para la supervision humana final.",
+            f"Automatic technical agent review: no blockers were found (feasibility={technical.feasibility_score}). "
+            "Both agentic validations (business and technical) passed. The idea is ready for final human oversight.",
+            f"Revisao automatica do agente tecnico: nenhum bloqueio foi detectado (factibilidade={technical.feasibility_score}). "
+            "Ambas as validacoes agenticas (negocio e tecnica) foram aprovadas. A ideia esta pronta para a supervisao humana final.",
+        )
+    if technical.recommendation == "clarify":
+        return _msg(
+            lang,
+            f"Revision automatica del agente tecnico: se detectaron aspectos que requieren aclaracion (factibilidad={technical.feasibility_score}). "
+            "Se solicitara al equipo de negocio responder preguntas puntuales antes de continuar.",
+            f"Automatic technical agent review: some aspects require clarification (feasibility={technical.feasibility_score}). "
+            "The business team will be asked to answer targeted questions before continuing.",
+            f"Revisao automatica do agente tecnico: alguns aspectos precisam de esclarecimento (factibilidade={technical.feasibility_score}). "
+            "A equipe de negocio sera solicitada a responder perguntas pontuais antes de continuar.",
+        )
+    return _msg(
+        lang,
+        f"Revision automatica del agente tecnico: se identificaron bloqueos criticos (factibilidad={technical.feasibility_score}). "
+        f"Motivos: {', '.join(technical.blockers) if technical.blockers else 'ver detalle de validacion.'}",
+        f"Automatic technical agent review: critical blockers were identified (feasibility={technical.feasibility_score}). "
+        f"Reasons: {', '.join(technical.blockers) if technical.blockers else 'see validation detail.'}",
+        f"Revisao automatica do agente tecnico: bloqueios criticos foram identificados (factibilidade={technical.feasibility_score}). "
+        f"Motivos: {', '.join(technical.blockers) if technical.blockers else 'ver detalhe da validacao.'}",
+    )
+
+
+def _ensure_technical_agent_reviewed(idea: IdeaCase) -> tuple[IdeaCase, bool]:
+    """Runs the technical agent's automatic first-pass review as soon as an idea
+    reaches business_viable/technical_validation, without requiring a manual chat.
+
+    - If the agent finds no blockers ("continue"), it self-approves immediately:
+      both agentic validations (business + technical) are marked complete and the
+      idea only needs the final human approval to move across funding/development/
+      production and to unlock the architecture package.
+    - If the agent needs clarification ("clarify"), it prepares guided questions
+      for the business team to answer before it can approve.
+    - If the agent finds critical blockers ("stop"), the idea is rejected.
+
+    This also retroactively auto-approves ideas that already carry a
+    "continue" technical_validation from before this automatic flow existed
+    (e.g. seeded/demo data or ideas validated via the legacy manual chat) but
+    were never marked as agent_approved.
+    """
     if idea.status != IdeaStatus.business_viable:
         return (idea, False)
 
-    # Legacy compatibility: if idea was technically validated without chat and no architecture exists,
-    # force the guided technical chat flow before architecture generation.
-    if idea.technical_validation is not None and len(idea.technical_interactions) == 0 and idea.architecture_package is None:
-        idea.technical_validation = None
-        idea.rejection = None
-        idea.technical_questions = _build_technical_questions(idea)
-        return (idea, True)
+    changed = False
 
-    if idea.technical_validation is not None:
-        return (idea, False)
+    if idea.technical_validation is None:
+        technical_request = _auto_infer_technical_request(idea)
+        technical = _run_technical_validation(idea, technical_request)
+        idea.technical_validation = technical
+        idea.current_stage = IdeaStage.technical_validation
+        changed = True
 
-    if not idea.technical_questions:
-        idea.technical_questions = _build_technical_questions(idea)
-        return (idea, True)
+        idea.technical_interactions.append(
+            TechnicalInteraction(
+                asked_questions=[],
+                answers=[],
+                agent_summary=_build_auto_technical_summary(idea, technical),
+                technical_validation=technical,
+                created_at=datetime.utcnow(),
+                source="agent_auto",
+            )
+        )
 
-    return (idea, False)
+        if technical.recommendation == "stop":
+            lang = _resolve_language(idea.response_language)
+            idea.status = IdeaStatus.rejected
+            idea.rejection = RejectionInfo(
+                phase=RejectionPhase.technical,
+                reason=_msg(
+                    lang,
+                    "La idea no supera la revision tecnica automatica: complejidad, riesgo o madurez de datos por encima del umbral permitido.",
+                    "The idea did not pass the automatic technical review: complexity, risk, or data readiness exceed the allowed threshold.",
+                    "A ideia nao passou na revisao tecnica automatica: complexidade, risco ou maturidade de dados acima do limite permitido.",
+                ),
+            )
+            idea.technical_questions = []
+        elif technical.recommendation == "clarify":
+            idea.technical_questions = _build_technical_questions(idea)
+        else:
+            idea.technical_questions = []
+            idea.agent_approved = True
+            idea.agent_approval_summary = _build_auto_technical_summary(idea, technical)
+            idea.agent_approval_date = datetime.utcnow()
+
+    # Retroactive safety net: any idea carrying a "continue" technical_validation
+    # or a legacy text-based positive recommendation (from seeded/legacy data) must
+    # end up with agent_approved=True, since a positive/continue recommendation means
+    # the technical agent found no blockers.
+    # 
+    # Legacy seeded data uses text recommendations like:
+    # - "Proceder a implementación..." (proceed with implementation)
+    # - "Excelente candidato para desarrollo..." (excellent candidate)
+    # - "Excelente desempeño en producción" (excellent performance in production)
+    # - "Prototipo exitoso en producción" (successful prototype in production)
+    # 
+    # All of these indicate "continue" intent and should auto-approve.
+    if idea.technical_validation is not None and not idea.agent_approved:
+        rec = idea.technical_validation.recommendation
+        print(f"DEBUG: Checking retroactive approval for {idea.idea_id}")
+        print(f"DEBUG: rec={rec}, is_string={isinstance(rec, str)}")
+        is_legacy_positive = (
+            isinstance(rec, str) and (
+                rec.startswith("Proceder")
+                or rec.startswith("Excelente")
+                or rec.startswith("Prototipo")
+            )
+        )
+        print(f"DEBUG: is_legacy_positive={is_legacy_positive}")
+        if rec == "continue" or is_legacy_positive:
+            print(f"DEBUG: AUTO-APPROVING {idea.idea_id}")
+            idea.agent_approved = True
+            idea.agent_approval_summary = idea.agent_approval_summary or _build_auto_technical_summary(
+                idea, idea.technical_validation
+            )
+            idea.agent_approval_date = idea.agent_approval_date or datetime.utcnow()
+            idea.technical_questions = []
+            changed = True
+
+    return (idea, changed)
+
+
+def _apply_technical_auto_review(idea: IdeaCase) -> IdeaCase:
+    reviewed_idea, changed = _ensure_technical_agent_reviewed(idea)
+    if changed:
+        return idea_store.save(reviewed_idea)
+    return reviewed_idea
 
 
 def _evaluate_technical_feasibility(request: BusinessIntakeRequest) -> tuple[bool, str]:
@@ -2595,7 +2758,7 @@ def list_my_ideas(current_user: UserProfile = Depends(get_current_user)) -> list
     ideas = idea_store.list_by_owner(current_user.user_id)
     updated = False
     for index, idea in enumerate(ideas):
-        ready_idea, changed = _ensure_technical_chat_ready(idea)
+        ready_idea, changed = _ensure_technical_agent_reviewed(idea)
         ideas[index] = ready_idea
         if changed:
             idea_store.save(ready_idea)
@@ -2623,10 +2786,10 @@ def get_technical_queue(current_user: UserProfile = Depends(get_current_user)) -
         and idea.current_stage == IdeaStage.technical_validation
     ]
     
-    # Ensure all ideas have technical chat ready
+    # Ensure all ideas already went through the automatic technical agent review
     updated = False
     for index, idea in enumerate(queue):
-        ready_idea, changed = _ensure_technical_chat_ready(idea)
+        ready_idea, changed = _ensure_technical_agent_reviewed(idea)
         queue[index] = ready_idea
         if changed:
             idea_store.save(ready_idea)
@@ -2672,7 +2835,7 @@ def get_idea(idea_id: str, current_user: UserProfile = Depends(get_current_user)
         raise HTTPException(status_code=404, detail="Idea not found")
     if idea.owner_user_id != current_user.user_id:
         raise HTTPException(status_code=403, detail="No puedes consultar ideas de otro usuario")
-    ready_idea, changed = _ensure_technical_chat_ready(idea)
+    ready_idea, changed = _ensure_technical_agent_reviewed(idea)
     if changed:
         return idea_store.save(ready_idea)
     return idea
@@ -2973,8 +3136,12 @@ def get_idea_technical_questions(
         raise HTTPException(status_code=403, detail="No puedes consultar ideas de otro usuario")
     if idea.status != IdeaStatus.business_viable:
         raise HTTPException(status_code=400, detail="La idea debe estar viable en negocio antes de chat tecnico")
-    if idea.technical_validation is not None:
-        raise HTTPException(status_code=400, detail="La idea ya cuenta con validacion tecnica")
+
+    idea = _apply_technical_auto_review(idea)
+    if idea.technical_validation is None:
+        raise HTTPException(status_code=400, detail="El agente tecnico aun no genero una revision automatica para esta idea")
+    if idea.technical_validation.recommendation != "clarify":
+        raise HTTPException(status_code=400, detail="Esta idea no requiere aclaraciones tecnicas adicionales; el agente ya emitio su decision")
 
     if not idea.technical_questions:
         idea.technical_questions = _build_technical_questions(idea)
@@ -2996,8 +3163,12 @@ def submit_technical_chat(
         raise HTTPException(status_code=403, detail="No puedes validar ideas de otro usuario")
     if idea.status != IdeaStatus.business_viable:
         raise HTTPException(status_code=400, detail="La idea debe estar aprobada en negocio antes de validar tecnica")
-    if idea.technical_validation is not None:
-        raise HTTPException(status_code=400, detail="La idea ya cuenta con validacion tecnica")
+
+    idea = _apply_technical_auto_review(idea)
+    if idea.technical_validation is None:
+        raise HTTPException(status_code=400, detail="El agente tecnico aun no genero una revision automatica para esta idea")
+    if idea.technical_validation.recommendation != "clarify":
+        raise HTTPException(status_code=400, detail="Esta idea no requiere aclaraciones tecnicas adicionales; el agente ya emitio su decision")
 
     if not idea.technical_questions:
         idea.technical_questions = _build_technical_questions(idea)
@@ -3013,8 +3184,8 @@ def submit_technical_chat(
     idea.technical_validation = technical
     idea.current_stage = IdeaStage.technical_validation
 
+    lang = _resolve_language(idea.response_language)
     if technical.recommendation == "stop":
-        lang = _resolve_language(idea.response_language)
         idea.status = IdeaStatus.rejected
         idea.rejection = RejectionInfo(
             phase=RejectionPhase.technical,
@@ -3025,8 +3196,20 @@ def submit_technical_chat(
                 "A ideia nao passou na validacao tecnica: complexidade, risco ou maturidade de dados acima do limite permitido.",
             ),
         )
+        idea.agent_approved = False
     else:
         idea.rejection = None
+        idea.agent_approved = True
+        idea.agent_approval_summary = _msg(
+            lang,
+            "Aclaraciones tecnicas resueltas por el equipo de negocio. El agente tecnico aprueba la validacion: "
+            "ambas validaciones agenticas (negocio y tecnica) quedan completas y la idea pasa a supervision humana final.",
+            "Technical clarifications resolved by the business team. The technical agent approves the validation: "
+            "both agentic validations (business and technical) are complete and the idea moves to final human oversight.",
+            "Esclarecimentos tecnicos resolvidos pela equipe de negocio. O agente tecnico aprova a validacao: "
+            "ambas as validacoes agenticas (negocio e tecnica) ficam completas e a ideia segue para a supervisao humana final.",
+        )
+        idea.agent_approval_date = datetime.utcnow()
 
     idea.technical_interactions.append(
         TechnicalInteraction(
@@ -3035,6 +3218,7 @@ def submit_technical_chat(
             agent_summary=_build_technical_summary(request.answers, technical, idea.response_language),
             technical_validation=technical,
             created_at=datetime.utcnow(),
+            source="chat",
         )
     )
     idea.technical_questions = []
@@ -3108,9 +3292,11 @@ def technical_approval(
     if idea.current_stage != IdeaStage.technical_validation:
         raise HTTPException(status_code=400, detail="La idea debe estar en etapa 'technical_validation'")
     
+    idea = _apply_technical_auto_review(idea)
+
     # Verify agent approval
     if not idea.agent_approved:
-        raise HTTPException(status_code=400, detail="El agente IA debe aprobar la idea antes de que el equipo humano pueda hacerlo")
+        raise HTTPException(status_code=400, detail="El agente tecnico aun no aprueba la idea (esperando aclaraciones o revision automatica)")
     
     # Generate architecture package if not already exists
     if idea.architecture_package is None:
@@ -3160,65 +3346,18 @@ def technical_rejection(
     return idea_store.save(idea)
 
 
-@app.post("/ideas/{idea_id}/technical-chat", response_model=TechnicalChatResponse)
-def technical_chat(
-    idea_id: str,
-    request: TechnicalChatRequest,
-    current_user: UserProfile = Depends(get_current_user),
-) -> TechnicalChatResponse:
-    """Add a technical chat interaction (question/answer with AI agent)."""
-    if current_user.role not in ["technical", "business"]:
-        raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden participar en chat tecnico")
-    
-    idea = idea_store.get(idea_id)
-    if idea is None:
-        raise HTTPException(status_code=404, detail="Idea not found")
-    if idea.tenant_id != current_user.tenant_id:
-        raise HTTPException(status_code=403, detail="No tienes acceso a esta idea")
-    
-    # Simulate AI agent response (in production, call actual AI service)
-    agent_response = f"Gracias por tu pregunta sobre {request.question_type}. Basándome en el problema y arquitectura propuesta, "
-    agent_response += "recomiendo enfocarse en la escalabilidad y seguridad. "
-    agent_response += "¿Necesitas más claridad sobre algún componente específico?"
-    
-    agent_questions = [
-        "¿Cuál es el volumen de transacciones esperado mensualmente?",
-        "¿Tienes requisitos específicos de compliance o regulación?",
-        "¿Cuál es el tiempo de respuesta máximo aceptable?"
-    ]
-    
-    interaction = TechnicalInteraction(
-        asked_questions=idea.technical_questions or [],
-        answers=[],
-        agent_summary=agent_response,
-        technical_validation=idea.technical_validation or TechnicalValidation(
-            recommendation="proceed",
-            estimated_complexity_hours=40,
-            required_roles=["Backend", "Frontend", "DevOps"],
-            flagged_risks=[]
-        ),
-        created_at=datetime.utcnow()
-    )
-    
-    idea.technical_interactions.append(interaction)
-    idea_store.save(idea)
-    
-    return TechnicalChatResponse(
-        interaction_id=f"{idea_id}-{len(idea.technical_interactions)}",
-        agent_response=agent_response,
-        agent_questions=agent_questions,
-        next_steps="Por favor revisa las preguntas anteriores y proporciona más detalles técnicos.",
-        created_at=datetime.utcnow()
-    )
-
-
 @app.post("/ideas/{idea_id}/agent-approval", response_model=IdeaCase)
 def agent_approval(
     idea_id: str,
     request: AgentApprovalRequest,
     current_user: UserProfile = Depends(get_current_user),
 ) -> IdeaCase:
-    """Record AI agent approval of technical idea."""
+    """Manual override to record/replace the AI agent's technical approval.
+
+    In the standard flow the agent approves automatically (see
+    `_ensure_technical_agent_reviewed`) as soon as it finds no blockers, or right
+    after the business team resolves guided clarifications. This endpoint is kept
+    for technical staff to override/annotate that decision when needed."""
     if current_user.role != "technical":
         raise HTTPException(status_code=403, detail="Solo usuarios tecnicos pueden registrar aprobacion del agente")
     

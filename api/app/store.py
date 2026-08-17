@@ -107,6 +107,11 @@ def _init_schema() -> None:
                 quota_adjustments TEXT NOT NULL DEFAULT '[]',
                 clarification_questions TEXT NOT NULL,
                 clarification_interactions TEXT NOT NULL,
+                agent_approved BOOLEAN NOT NULL DEFAULT 0,
+                agent_approval_summary TEXT,
+                agent_approval_date TEXT,
+                human_approved BOOLEAN NOT NULL DEFAULT 0,
+                human_approval_date TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
@@ -145,6 +150,11 @@ def _init_schema() -> None:
         _ensure_column(connection, "ideas", "quota_adjustments", "TEXT NOT NULL DEFAULT '[]'")
         _ensure_column(connection, "ideas", "technical_questions", "TEXT NOT NULL DEFAULT '[]'")
         _ensure_column(connection, "ideas", "technical_interactions", "TEXT NOT NULL DEFAULT '[]'")
+        _ensure_column(connection, "ideas", "agent_approved", "BOOLEAN NOT NULL DEFAULT 0")
+        _ensure_column(connection, "ideas", "agent_approval_summary", "TEXT")
+        _ensure_column(connection, "ideas", "agent_approval_date", "TEXT")
+        _ensure_column(connection, "ideas", "human_approved", "BOOLEAN NOT NULL DEFAULT 0")
+        _ensure_column(connection, "ideas", "human_approval_date", "TEXT")
 
 
 _init_schema()
@@ -168,8 +178,10 @@ class IdeaStore:
                     technical_questions, technical_interactions, technical_validation,
                     architecture_package, response_composition, rejection,
                     deployment_status, monthly_token_quota_base, extra_quota_current_month,
-                    quota_month, quota_adjustments, clarification_questions, clarification_interactions, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    quota_month, quota_adjustments, clarification_questions, clarification_interactions,
+                    agent_approved, agent_approval_summary, agent_approval_date,
+                    human_approved, human_approval_date, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(idea_id) DO UPDATE SET
                     tenant_id=excluded.tenant_id,
                     owner_user_id=excluded.owner_user_id,
@@ -202,6 +214,11 @@ class IdeaStore:
                     quota_adjustments=excluded.quota_adjustments,
                     clarification_questions=excluded.clarification_questions,
                     clarification_interactions=excluded.clarification_interactions,
+                    agent_approved=excluded.agent_approved,
+                    agent_approval_summary=excluded.agent_approval_summary,
+                    agent_approval_date=excluded.agent_approval_date,
+                    human_approved=excluded.human_approved,
+                    human_approval_date=excluded.human_approval_date,
                     created_at=excluded.created_at,
                     updated_at=excluded.updated_at
                 """,
@@ -238,6 +255,11 @@ class IdeaStore:
                     _to_json(idea.quota_adjustments),
                     _to_json(idea.clarification_questions),
                     _to_json(idea.clarification_interactions),
+                    1 if idea.agent_approved else 0,
+                    idea.agent_approval_summary,
+                    idea.agent_approval_date.isoformat() if idea.agent_approval_date else None,
+                    1 if idea.human_approved else 0,
+                    idea.human_approval_date.isoformat() if idea.human_approval_date else None,
                     idea.created_at.isoformat(),
                     idea.updated_at.isoformat(),
                 ),
@@ -291,6 +313,11 @@ class IdeaStore:
                 "quota_adjustments": _from_json(row["quota_adjustments"]) or [],
                 "clarification_questions": _from_json(row["clarification_questions"]) or [],
                 "clarification_interactions": _from_json(row["clarification_interactions"]) or [],
+                "agent_approved": bool(row["agent_approved"]),
+                "agent_approval_summary": row["agent_approval_summary"],
+                "agent_approval_date": datetime.fromisoformat(row["agent_approval_date"]) if row["agent_approval_date"] else None,
+                "human_approved": bool(row["human_approved"]),
+                "human_approval_date": datetime.fromisoformat(row["human_approval_date"]) if row["human_approval_date"] else None,
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"],
             }

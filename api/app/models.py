@@ -120,6 +120,7 @@ class TechnicalInteraction(BaseModel):
     agent_summary: str = Field(..., min_length=10)
     technical_validation: TechnicalValidation
     created_at: datetime
+    source: str = Field(default="chat")  # "agent_auto" (automatic first-pass review) or "chat" (guided Q&A)
 
 
 class ArchitectureComponent(BaseModel):
