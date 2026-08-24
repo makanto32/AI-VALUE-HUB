@@ -1,0 +1,40 @@
+name: Validate deployment kit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Bicep
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az bicep build --file infra/main.bicep --outfile /tmp/main.json
+            diff -u <(jq --sort-keys . infra/main.json) <(jq --sort-keys . /tmp/main.json)
+      - name: Parse PowerShell scripts
+        shell: pwsh
+        run: |
+          $errors = @()
+          Get-ChildItem scripts -Filter *.ps1 | ForEach-Object {
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              $_.FullName,
+              [ref]$null,
+              [ref]$parseErrors
+            )
+            $errors += $parseErrors
+          }
+          if ($errors) { throw ($errors | Out-String) }
+      - name: Ensure examples contain no secrets
+        shell: pwsh
+        run: |
+          $tracked = git ls-files
+          $matches = Select-String -Path $tracked -Pattern '(?i)(client_secret|password|api[_-]?key)\s*[:=]\s*[^$<R]'
+          if ($matches) { throw ($matches | Out-String) }
