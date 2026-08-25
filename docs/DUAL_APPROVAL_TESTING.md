@@ -260,7 +260,7 @@
      -H "Content-Type: application/json" \
      -d '{"username":"analista.tecnologia","password":"Demo1234!"}'
    ```
-   - Expected: Returns JWT token
+   - Expected: Returns an opaque demo bearer session token
 
 2. **Get Technical Queue**
    ```bash

@@ -1,6 +1,9 @@
 # AI Value Hub
 
-Project foundation aligned with architecture document roadmap.
+Reference implementation and deployment kit for governing and prioritizing enterprise AI initiatives on Azure.
+
+> [!IMPORTANT]
+> This is a personal, community-maintained project. It is not an official Microsoft product or Azure service, and Microsoft does not provide support or warranties for it. The repository contains a working demo, infrastructure templates, and operational guidance; items marked as roadmap are not implemented. Review security, compliance, availability, and cost requirements before using it in production.
 
 ## License
 This repository is licensed under MIT.
@@ -8,14 +11,14 @@ See full terms in [LICENSE](LICENSE).
 
 ## ⭐ Star Here - Quick Start
 
-**AI Value Hub** is an AI-powered initiative management and validation platform for financial organizations. Implements a 3-phase workflow with economic gates, robust technical validation, and intelligent duplicate detection.
+**AI Value Hub** is an AI initiative management and validation reference platform for enterprises. It implements a three-stage workflow with context-aware business validation, deterministic technical assessment, human technical approval, economic gating before funding, and duplicate detection.
 
 ### 🎯 Key Value Proposition
-- **3-Phase Validation**: Intake → Business (context-aware) → Technical (with economic gate)
-- **Intelligent Duplicate Detection**: 4-strategy semantic analysis detects duplicates even with different wording
+- **Three-Stage Validation**: Intake → context-aware business validation → automatic technical assessment and final human approval
+- **Heuristic Duplicate Gate**: normalized exact title, title containment, and token-overlap thresholds prevent likely duplicate intake within a tenant
 - **Economic Viability Gate**: Validates financial viability (cost-to-value ratio) before funding
 - **Multi-role**: Business Analyst, Technical Reviewer, Admin
-- **Production-Ready Demo**: Sample data, complete workflow, Entra ID ready
+- **Deployable Reference Demo**: Sample data and a complete local workflow; Microsoft Entra ID integration remains a production roadmap item
 
 ---
 
@@ -37,28 +40,28 @@ Access the project's visual views directly. All views below are read-only and re
 ### Phase 1: Intake & Context
 - ✅ Structured idea capture with problem statement and expected value
 - ✅ Per-tenant Context Engine: evaluates viability within business baseline
-- ✅ Multi-language support (ES, EN, PT) with automatic i18n translation
-- ✅ User-level isolation: each session accesses only their own ideas
+- ✅ Localized workflows and generated responses in ES, EN, and PT, with Spanish as the canonical language
+- ✅ Owner-scoped idea access, with tenant-scoped access for authorized technical reviewers and admins
 
 ### Phase 2: Business Validation (Context-Aware)
 - ✅ Dynamic validation questionnaire based on business context
-- ✅ **Intelligent Duplicate Detection** with 4-strategy semantic analysis:
-  - Keyword similarity (backward compatibility)
-  - Structural string similarity (SequenceMatcher)
-  - Semantic concept overlap (financial domain synonyms)
-  - Intention analysis (title + problem statement combined)
-  - **Detects duplicates even with different wording or reduced description**
+- ✅ **Heuristic Duplicate Gate** on active tenant initiatives:
+  - Normalized exact-title matching
+  - Normalized title containment
+  - Jaccard token overlap across title and problem statement
+  - Returns the likely duplicate and owner contact for human follow-up
 - ✅ Automatic scoring based on responses
 - ✅ Interactive clarification flow if scoring is low
 
 ### Phase 3: Technical Validation (With Economic Gate)
 - ✅ **Dedicated technical queue** for technical reviewers
+- ✅ **Automatic deterministic assessment** followed by mandatory human technical approval for the standard approval endpoint
 - ✅ **Automatic Value Economics analysis**:
   - Extracts expected value from description (high/medium/low confidence)
   - Calculates monthly infrastructure consumption cost
   - Computes value-to-cost ratio and payback period
   - Period normalization (monthly/annual/quarterly/weekly/daily)
-- ✅ **Economic Viability Gate**: blocks funding of economically unfeasible ideas
+- ✅ **Economic Viability Gate**: blocks movement to funding for unfavorable, marginal, or unquantified ideas unless a technical reviewer explicitly overrides it
   - Verdicts: favorable (>=3.0x), acceptable (>=1.5x), marginal (>=1.0x), unfavorable (<1.0x)
   - Optional override for business context via `?override_economics=true`
 - ✅ **Technical Rejection Workflow**: records rejection reason
@@ -94,9 +97,9 @@ Access the project's visual views directly. All views below are read-only and re
 - ✅ Business validation with dynamic questionnaire + initial technical filter
 - ✅ Use case status with rejection reason (business or technical phase)
 - ✅ UI with login demo flow, context capture, and "My Ideas" view
-- ✅ User-level isolation: each session accesses only their ideas
+- ✅ Owner-scoped access for business users and tenant-scoped review access for technical/admin roles
 - ✅ Multi-language support (ES/EN/PT)
-- ✅ Demo with 13 example ideas pre-loaded
+- ✅ Seven reusable demo ideas across ES, EN, and PT, available through the demo seed endpoint
 
 ## MVP2 Implemented ✅
 - ✅ Persistence in SQLite DB (evolvable to PostgreSQL)
@@ -107,18 +110,11 @@ Access the project's visual views directly. All views below are read-only and re
 
 ## 🎯 Latest Updates (v2.1) - Robust Validation & Economic Gating
 
-### Intelligent Duplicate Detection (4-Strategy Semantic)
-- **Problem solved**: Simple keyword searches did not detect duplicates when wording changed
-- **Solution**: Combined analysis across 4 dimensions:
-  1. **Keyword Similarity** - Direct shared words
-  2. **Structural String Similarity** - SequenceMatcher detects similarity even with format changes
-  3. **Semantic Concept Overlap** - Domain synonym mapping (prediction ↔ predictor, churn ↔ attrition)
-  4. **Intention Analysis** - Combines title + problem statement to detect underlying objective
-- **Result**: Detects duplicates even when:
-  - You change "Prediction" to "Predictor"
-  - You significantly reduce description
-  - You use different synonyms for the same problem
-  - You modify wording but objective is identical
+### Heuristic Duplicate Gate
+- **Scope**: Compares a new intake request with active initiatives in the same tenant.
+- **Signals**: Normalized exact titles, title containment, and Jaccard token overlap for title, problem statement, and their combined text.
+- **Thresholds**: Requires strong title and problem overlap together, or strong combined overlap.
+- **Outcome**: Returns HTTP `409 Conflict` with the likely duplicate and owner details. The gate is heuristic and does not claim embedding-based semantic equivalence.
 
 ### Technical Queue with Automatic Value Economics
 - **Role**: Technical Reviewer accesses queue of business_viable ideas
@@ -187,7 +183,7 @@ Access the project's visual views directly. All views below are read-only and re
 - [ ] **High Availability** - Active-active deployment in multi-regions
 
 ### Future Marketplace-Oriented Capabilities (Under Evaluation)
-See [docs/APPLICATION_OVERVIEW.md](docs/APPLICATION_OVERVIEW.md#roadmap) for the full list of upcoming features:
+See the [project roadmap](#roadmap---not-yet-implemented) for the broader delivery sequence:
 - [ ] **Community Voting / Upvoting** - Crowdsourced validation of ideas
 - [ ] **Download / Adoption Metrics** - Track usage and deployment success
 - [ ] **User Comments and Reviews** - Community feedback on initiatives
@@ -195,11 +191,11 @@ See [docs/APPLICATION_OVERVIEW.md](docs/APPLICATION_OVERVIEW.md#roadmap) for the
 - [ ] **Admin Center** - Token/Cost/ROI governance and monitoring
 - [ ] **Multi-tenant IaC** - Packaged deployment per client with Infrastructure as Code
 
-## Authentication (Demo + Entra-Ready)
+## Authentication (Demo Current, Microsoft Entra ID Target)
 
 ### Active Provider
 - Default: `AIHUB_AUTH_PROVIDER=demo` (local test users)
-- Planned: `AIHUB_AUTH_PROVIDER=entra` for Azure Entra ID integration (509 Not Implemented until completion)
+- Planned: `AIHUB_AUTH_PROVIDER=entra` for Microsoft Entra ID integration. The API returns `501 Not Implemented` when this provider is selected until token validation is completed.
 
 ### Demo Users
 | User | Password | Role | Access |
@@ -210,13 +206,13 @@ See [docs/APPLICATION_OVERVIEW.md](docs/APPLICATION_OVERVIEW.md#roadmap) for the
 | `admin.valuehub` | `Demo1234!` | Admin | Admin Panel, Context Manager, Executive Dashboard |
 
 ### Authentication Endpoints
-- `POST /auth/login` - Obtain JWT token
+- `POST /auth/login` - Obtain a demo bearer session token
 - `GET /auth/me` - Get current user profile
 - `GET /ideas/mine` - Get user's ideas
 
 ### Authentication Flow
 1. Login with user/password
-2. Backend validates and returns JWT token
+2. Backend validates the demo account and returns an opaque bearer session token
 3. Frontend stores token in localStorage
 4. All subsequent requests include token in Authorization header
 5. Session syncs every 10s with polling for status updates
@@ -227,9 +223,9 @@ See [docs/APPLICATION_OVERVIEW.md](docs/APPLICATION_OVERVIEW.md#roadmap) for the
 ai-opportunity-hub/
 ├── api/                           # Backend FastAPI
 │   ├── app/
-│   │   ├── main.py               # REST API with 30+ endpoints
+│   │   ├── main.py               # REST API with 48 application endpoints
 │   │   ├── models.py             # Pydantic models for request/response
-│   │   ├── matching_service.py   # Semantic duplicate detection engine
+│   │   ├── matching_service.py   # Related-initiative scoring utilities
 │   │   ├── value_economics.py    # Economic viability analysis
 │   │   ├── pdf_service.py        # Architecture package PDF generation
 │   │   ├── store.py              # SQLite persistence layer
@@ -257,12 +253,12 @@ ai-opportunity-hub/
 
 | Component | Responsibility | Tech Stack |
 |-----------|----------------|-----------|
-| **REST API** | 30+ endpoints, JWT auth, business logic | FastAPI, Pydantic, SQLite |
-| **Semantic Matching** | 4-strategy duplicate detection with synonyms | Python regex + difflib |
+| **REST API** | 48 application endpoints, demo bearer auth, business logic | FastAPI, Pydantic, SQLite |
+| **Intake Duplicate Gate** | Exact, containment, and Jaccard token-overlap checks | Python normalization + set similarity |
 | **Value Economics** | Cost analysis, ROI calculation, economic viability | Python numerical analysis |
 | **Frontend SPA** | Multi-role UI, real-time polling, i18n | React 18, Vite, CSS modules |
-| **Auth Layer** | JWT token + demo users (Entra-ready) | FastAPI HTTPBearer, localStorage |
-| **Database** | Tenant isolation, idea persistence, audit trail | SQLite (dev) → PostgreSQL (prod) |
+| **Auth Layer** | Opaque demo bearer sessions; Entra token validation is planned | FastAPI HTTPBearer, localStorage |
+| **Database** | Tenant-scoped idea persistence and workflow history | SQLite (current) → PostgreSQL (target) |
 
 ---
 
@@ -342,18 +338,23 @@ npm run dev
 ### Reference Guides
 - **[CLIENT_ARCHITECTURE_REFERENCE.md](docs/CLIENT_ARCHITECTURE_REFERENCE.md)** - Architectural diagram and description for development teams
 - **[FABRIC_MEDALLION_SEMANTIC_SETUP.md](docs/FABRIC_MEDALLION_SEMANTIC_SETUP.md)** - Microsoft Fabric setup for Executive Dashboard
-- **[INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md)** - Deployment guide for Azure Container Apps
+- **[AZURE_DEPLOYMENT_PLAN.md](docs/AZURE_DEPLOYMENT_PLAN.md)** - Deployment plan for Azure Container Apps
 - **[MVP_IMPLEMENTATION_LOG.md](docs/MVP_IMPLEMENTATION_LOG.md)** - Detailed changelog of implementations
+- **[Architecture Center readiness](docs/ARCHITECTURE_CENTER_READINESS.md)** - Requirement-by-requirement status and submission gates
+- **[Architecture Center proposal](docs/architecture-center-proposal.md)** - English proposal for a Solution Idea contribution
+- **[Architecture Center Solution Idea draft](docs/architecture-center-solution-idea.md)** - Editorial draft with workflow, trade-offs, Well-Architected, and Responsible AI guidance
 
 ---
 
 ## 🤝 Contribution & Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements, [SECURITY.md](SECURITY.md) for vulnerability reporting, and [SUPPORT.md](SUPPORT.md) for the support scope.
+
 ### For Development Teams
 This repository is designed to be:
 1. **Clean and Clear**: Modular code, documented endpoints, consistent naming conventions
 2. **Extensible**: SOLID architecture, decoupled services, easy to add new phases/roles
-3. **Production-Ready**: Robust error handling, logging, input validation, CORS configured
+3. **Deployment-Oriented**: A deployed API manifest, container definitions, and Azure foundation templates are included for evaluation and extension
 4. **Well-Tested**: Test cases included for matching service, economics engine, and critical workflows
 
 ### To Add Features
@@ -383,91 +384,5 @@ For technical questions, issues, or feature proposals:
 ---
 
 **Last Updated**: August 2026  
-**Status**: MVP2 Complete ✅ | Phase 3 (Production) In Progress  
+**Status**: Reference MVP operational | Production controls in progress
 **Maintainers**: Development Team
-5. Push a GitHub y crear Pull Request con descripción clara
-
-### Estructura de Naming
-- **Archivos**: snake_case (e.g., `matching_service.py`)
-- **Funciones**: snake_case (e.g., `find_related_initiatives()`)
-- **Clases**: PascalCase (e.g., `IdeaCase`, `ValueEconomics`)
-- **Constantes**: UPPER_SNAKE_CASE (e.g., `SEMANTIC_SYNONYMS`)
-
----
-
-## 📄 Licencia
-Este proyecto está licenciado bajo **MIT License**. Consulta [LICENSE](LICENSE) para más detalles.
-
-## 👥 Contacto & Soporte
-Para preguntas técnicas, issues o propuestas de features:
-1. Crea un [GitHub Issue](https://github.com/makanto32/AI-Opportunity-Hub/issues)
-2. Describe el problema/funcionalidad con contexto claro
-3. Incluye pasos para reproducir (si es bug) o use cases (si es feature)
-
----
-
-**Last Updated**: August 2026  
-**Status**: MVP2 Complete ✅ | Phase 3 (Production) In Progress  
-**Maintainers**: Development Team
-```bash
-git clone https://github.com/makanto32/AI-Opportunity-Hub.git
-cd AI-Opportunity-Hub
-```
-
-**2. Configurar Python Environment**
-```bash
-# Crear virtual environment
-python -m venv .venv
-
-# Activar (Windows PowerShell)
-& .\.venv\Scripts\Activate.ps1
-
-# Activar (Mac/Linux)
-source .venv/bin/activate
-
-# Instalar dependencias
-cd api
-pip install -r requirements.txt
-```
-
-**3. Ejecutar Backend (FastAPI)**
-```bash
-# Desde carpeta api/
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-
-# En otra terminal:
-# Backend corriendo en http://127.0.0.1:8000
-# Swagger API docs en http://127.0.0.1:8000/docs
-```
-
-**4. Ejecutar Frontend (React + Vite)**
-```bash
-# Desde carpeta frontend/
-npm install
-npm run dev
-
-# Frontend corriendo en http://localhost:5173
-# O usar .env.local para API remota:
-# VITE_API_URL=http://127.0.0.1:8000
-```
-
-**5. Acceder a la Aplicación**
-- **Frontend**: http://localhost:5173/
-- **API Docs (Swagger)**: http://127.0.0.1:8000/docs
-- **Demo Users**:
-  - Business: `analista.finanzas / Demo1234!`
-  - Technical: `analista.tecnologia / Demo1234!`
-  - Admin: `admin.valuehub / Demo1234!`
-
-### Troubleshooting
-
-| Problema | Solución |
-|----------|----------|
-| **API no responde** | Verificar `uvicorn` está corriendo en puerto 8000 |
-| **Frontend conecta a Azure API** | Verificar `.env.local` tiene `VITE_API_URL=http://127.0.0.1:8000` |
-| **Login falla** | Verificar usuario/contraseña coincide con tabla anterior (case-sensitive) |
-| **CORS errors** | Verificar CORS middleware en `api/app/main.py` permite `http://localhost:5173` |
-
----
-
-## 📚 Documentación

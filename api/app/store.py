@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -62,7 +63,7 @@ def _ensure_column(connection: sqlite3.Connection, table_name: str, column_name:
 
 
 def _init_schema() -> None:
-    with _connect() as connection:
+    with closing(_connect()) as connection, connection:
         connection.executescript(
             """
             PRAGMA journal_mode=WAL;
@@ -167,7 +168,7 @@ class IdeaStore:
             idea.created_at = existing.created_at
         idea.updated_at = datetime.utcnow()
 
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             connection.execute(
                 """
                 INSERT INTO ideas (
@@ -324,19 +325,19 @@ class IdeaStore:
         )
 
     def get(self, idea_id: str) -> IdeaCase | None:
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             row = connection.execute("SELECT * FROM ideas WHERE idea_id = ?", (idea_id,)).fetchone()
         if row is None:
             return None
         return self._row_to_idea(row)
 
     def list_all(self) -> List[IdeaCase]:
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             rows = connection.execute("SELECT * FROM ideas ORDER BY created_at DESC").fetchall()
         return [self._row_to_idea(row) for row in rows]
 
     def list_by_owner(self, owner_user_id: str) -> List[IdeaCase]:
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             rows = connection.execute(
                 "SELECT * FROM ideas WHERE owner_user_id = ? ORDER BY created_at DESC",
                 (owner_user_id,),
@@ -344,7 +345,7 @@ class IdeaStore:
         return [self._row_to_idea(row) for row in rows]
 
     def list_by_tenant(self, tenant_id: str) -> List[IdeaCase]:
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             rows = connection.execute(
                 "SELECT * FROM ideas WHERE tenant_id = ? ORDER BY created_at DESC",
                 (tenant_id,),
@@ -352,7 +353,7 @@ class IdeaStore:
         return [self._row_to_idea(row) for row in rows]
 
     def delete(self, idea_id: str) -> None:
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             connection.execute("DELETE FROM ideas WHERE idea_id = ?", (idea_id,))
 
 
@@ -367,7 +368,7 @@ class CompanyContextStore:
         context.updated_at = datetime.utcnow()
 
         payload = _to_json(context)
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             connection.execute(
                 """
                 INSERT INTO company_contexts (tenant_id, payload, created_at, updated_at)
@@ -387,7 +388,7 @@ class CompanyContextStore:
         return context
 
     def get(self, tenant_id: str) -> CompanyContext | None:
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             row = connection.execute("SELECT payload FROM company_contexts WHERE tenant_id = ?", (tenant_id,)).fetchone()
         if row is None:
             return None
@@ -409,7 +410,7 @@ class ContextFileStore:
     ) -> Dict[str, str]:
         file_id = str(uuid4())
         created_at = _now_iso()
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             connection.execute(
                 """
                 INSERT INTO context_files (
@@ -493,7 +494,7 @@ class AuthStore:
 
     def issue_token(self, user_id: str) -> str:
         token = str(uuid4())
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             connection.execute(
                 "INSERT INTO auth_sessions (token, user_id, created_at) VALUES (?, ?, ?)",
                 (token, user_id, _now_iso()),
@@ -501,7 +502,7 @@ class AuthStore:
         return token
 
     def get_user_by_token(self, token: str) -> Dict[str, str] | None:
-        with _connect() as connection:
+        with closing(_connect()) as connection, connection:
             row = connection.execute(
                 "SELECT user_id FROM auth_sessions WHERE token = ?",
                 (token,),

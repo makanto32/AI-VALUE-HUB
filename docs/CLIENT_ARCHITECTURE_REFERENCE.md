@@ -1,8 +1,8 @@
-# AI Opportunity Hub - Client Architecture Reference
+# AI Value Hub - Client Architecture Reference
 
 ## 1. Purpose
 
-AI Opportunity Hub is a reference solution that helps organizations evaluate and shape AI use cases from idea intake to technical validation and architecture packaging. The platform is designed to be understandable, extensible, and reusable as a baseline for customer-facing implementations.
+AI Value Hub is a reference solution that helps organizations evaluate and shape AI use cases from idea intake to technical validation, human approval, economic gating, and architecture packaging. The platform is designed to be understandable, extensible, and reusable as a baseline for customer-facing implementations.
 
 This document provides a structured view of the solution so that a client or partner can understand:
 
@@ -28,8 +28,8 @@ The reference architecture is guided by the following principles:
 1. Separation of concerns
    - UI, API, domain logic, data access, and storage are separated by responsibility.
 
-2. Tenant and session isolation
-   - Each user session operates over its own relevant data scope.
+2. Owner and tenant scoping
+  - Business users access their own ideas. Authorized technical reviewers and admins can access ideas within their tenant.
 
 3. Progressive maturity
    - The current implementation targets an MVP, but it is structured to evolve toward production-grade services.
@@ -53,15 +53,17 @@ The reference architecture is guided by the following principles:
   - Implements validation and architecture generation capabilities.
 
 - Intelligence Layer
-  - Context engine and technical validation logic.
+  - Deterministic context, matching, technical validation, and value-economics logic.
   - Produces architecture package outputs and recommendations.
+  - Does not currently call Microsoft Foundry or another hosted model runtime.
 
 - Data Layer
   - SQLite as the current persistence layer.
   - Blob storage abstraction for documents and context artifacts.
 
 - Integration Layer
-  - Prepared for Azure services, Entra authentication, and future enterprise connectors.
+  - Azure Blob Storage integration with local fallback and optional Fabric exports.
+  - Microsoft Entra ID token validation and future enterprise connectors remain roadmap items.
 
 ## 5. Component Map
 
@@ -85,15 +87,16 @@ The reference architecture is guided by the following principles:
 
 ### 6.2 Technical Validation
 
-1. The API receives a technical validation request for an idea.
-2. The backend invokes validation logic against business and technical criteria.
-3. A structured result is generated indicating feasibility, risks, and next steps.
+1. An idea that passes business validation receives an automatic deterministic technical assessment.
+2. The assessment can continue, request guided clarification, or reject the idea when blockers exceed thresholds.
+3. A technical reviewer examines the result and records final human approval or rejection.
+4. Value economics is calculated for reviewer context and enforced when moving an initiative to funding. Marginal, unfavorable, and unquantified cases require an explicit override.
 
 ### 6.3 Architecture Package Generation
 
-1. The backend produces an architecture package for the idea.
+1. After a successful technical interaction, the backend produces an architecture package for the idea.
 2. The package includes components, integrations, risks, and deployment considerations.
-3. The output can be used by architects, solution builders, or clients during implementation planning.
+3. The package can be downloaded as a generated PDF and used during implementation planning. It remains a draft that requires qualified architecture review.
 
 ## 7. Deployment Options
 
@@ -105,17 +108,19 @@ The reference architecture is guided by the following principles:
 
 ### Azure-Aligned Deployment
 
-- Containerized API and frontend deployment.
-- Azure Storage integration for blobs.
-- Authentication integration via Microsoft Entra ID.
-- Suitable for a client pilot or production-like environment.
+- The API has a Container Apps manifest with HTTPS ingress, system-assigned identity, ACR image, and SQLite on Azure Files.
+- The frontend and API have container definitions and update automation; full-stack Bicep declarations remain incomplete.
+- Azure Blob Storage is implemented for context uploads, with a local fallback when cloud configuration fails.
+- Microsoft Entra ID is a target architecture component, not an implemented authentication option. Selecting it currently returns HTTP 501.
+- Use this deployment only for development or controlled pilot validation until the production gaps are closed.
 
 ## 8. Security and Operational Considerations
 
-- Authentication is currently demo-based by default and prepared for Entra-based extension.
-- Storage abstraction enables local or cloud-backed persistence.
+- Authentication currently uses opaque demo bearer sessions. Demo credentials must not be used in production.
+- SQLite is the active system of record. PostgreSQL provisioning is optional infrastructure only and the application has not been migrated to it.
+- Blob uploads can use managed identity or a connection string and fall back to local storage in development.
 - Environment configuration should be used for secrets and service endpoints.
-- Logging, telemetry, and operational monitoring should be added for production deployment.
+- Logging, immutable audit records, alerts, runbooks, backup/restore validation, and network isolation must be completed for production deployment.
 
 ## 9. How a Client Can Reuse This Architecture
 
@@ -130,14 +135,14 @@ A client can use this repository as a reference in the following ways:
 ## 10. Recommended Evolution Path
 
 Phase 1: Stabilize the MVP
-- Improve API contracts.
-- Add stronger validation and error-handling.
-- Introduce test coverage.
+- Update the existing workflow scripts for current response contracts and automate regression testing.
+- Remove development debug output and define versioned API contracts.
+- Rerun end-to-end, container-build, and Bicep checks against a release candidate.
 
 Phase 2: Production Readiness
-- Replace local persistence with managed services.
-- Add authentication, RBAC, observability, and secrets management.
-- Harden deployment templates.
+- Replace SQLite with a managed relational store and migration tooling.
+- Implement Microsoft Entra ID token validation, application roles, and least-privilege RBAC.
+- Complete observability, secrets references, private connectivity, full-stack IaC, CI/CD, backups, and recovery tests.
 
 Phase 3: Enterprise Scaling
 - Introduce multi-tenant capabilities.
@@ -146,4 +151,4 @@ Phase 3: Enterprise Scaling
 
 ## 11. Summary
 
-AI Opportunity Hub provides a practical and extensible reference architecture for evaluating AI use cases. It can be used by clients as a blueprint for a structured innovation platform, a technical proof of concept, or a foundation for a more mature enterprise solution.
+AI Value Hub provides a practical and extensible reference implementation for evaluating AI use cases. Clients can use it as a blueprint for a structured innovation platform, a controlled technical proof of concept, or a foundation for a more mature enterprise solution after completing the documented production controls.

@@ -1,102 +1,67 @@
-#!/usr/bin/env python
-"""
-Quick test for the delete idea functionality
-"""
-import requests
-import json
+#!/usr/bin/env python3
+"""Isolated regression test for owner-scoped idea deletion."""
 
-BASE_URL = "http://127.0.0.1:8000"
+import os
+import tempfile
+import unittest
+from pathlib import Path
 
-# Demo user credentials
-USERNAME = "analista.finanzas"
-PASSWORD = "Demo1234!"
-TENANT = "contoso-demo"
 
-def login():
-    """Get auth token"""
-    response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"username": USERNAME, "password": PASSWORD, "tenant": TENANT}
-    )
-    if response.status_code != 200:
-        print(f"Login failed: {response.text}")
-        return None
-    data = response.json()
-    return data.get("access_token")
+_TEMP_DIRECTORY = tempfile.TemporaryDirectory(prefix="aihub-delete-idea-")
+os.environ["AIHUB_DB_PATH"] = str(Path(_TEMP_DIRECTORY.name) / "delete.db")
+os.environ["AIHUB_AUTH_PROVIDER"] = "demo"
 
-def create_test_idea(token):
-    """Create a test idea"""
-    headers = {"Authorization": f"Bearer {token}"}
-    payload = {
-        "tenant_id": TENANT,
-        "title": "Test Idea for Delete",
-        "problem_statement": "This is a test problem statement to verify delete functionality",
-        "expected_value": "This is the expected value of solving the problem",
-        "source_language": "en"
-    }
-    response = requests.post(
-        f"{BASE_URL}/ideas/intake",
-        json=payload,
-        headers=headers
-    )
-    if response.status_code != 200:
-        print(f"Create idea failed: {response.text}")
-        return None
-    data = response.json()
-    return data.get("idea_id")
+from fastapi.testclient import TestClient
 
-def delete_idea(token, idea_id):
-    """Delete the test idea"""
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.delete(
-        f"{BASE_URL}/ideas/{idea_id}",
-        headers=headers
-    )
-    if response.status_code == 200:
-        print(f"✓ Delete successful: {response.json()['message']}")
-        return True
-    else:
-        print(f"✗ Delete failed ({response.status_code}): {response.text}")
-        return False
+from api.app.main import app
 
-def verify_deleted(token, idea_id):
-    """Verify idea was deleted"""
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(
-        f"{BASE_URL}/ideas/{idea_id}",
-        headers=headers
-    )
-    if response.status_code == 404:
-        print(f"✓ Idea successfully deleted from database")
-        return True
-    else:
-        print(f"✗ Idea still exists in database")
-        return False
+
+class DeleteIdeaTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.client = TestClient(app)
+        cls.owner_headers = cls._login("analista.finanzas")
+        cls.other_headers = cls._login("analista.riesgo")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.client.close()
+        _TEMP_DIRECTORY.cleanup()
+
+    @classmethod
+    def _login(cls, username: str) -> dict[str, str]:
+        response = cls.client.post(
+            "/auth/login",
+            json={"username": username, "password": "Demo1234!"},
+        )
+        assert response.status_code == 200, response.text
+        return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+    def test_only_owner_can_delete_idea(self) -> None:
+        created = self.client.post(
+            "/ideas/intake",
+            headers=self.owner_headers,
+            json={
+                "tenant_id": "contoso-demo",
+                "title": "Disposable Regression Idea",
+                "problem_statement": "This temporary idea verifies that deletion remains restricted to its owner.",
+                "expected_value": "Save USD 10000 annually through automated regression coverage.",
+                "affected_users": ["engineering"],
+                "source_language": "en",
+            },
+        )
+        self.assertEqual(created.status_code, 200, created.text)
+        idea_id = created.json()["idea_id"]
+
+        denied = self.client.delete(f"/ideas/{idea_id}", headers=self.other_headers)
+        self.assertEqual(denied.status_code, 403, denied.text)
+
+        deleted = self.client.delete(f"/ideas/{idea_id}", headers=self.owner_headers)
+        self.assertEqual(deleted.status_code, 200, deleted.text)
+
+        missing = self.client.get(f"/ideas/{idea_id}", headers=self.owner_headers)
+        self.assertEqual(missing.status_code, 404, missing.text)
+
 
 if __name__ == "__main__":
-    print("Testing delete idea feature...\n")
-    
-    # Login
-    print("1. Logging in...")
-    token = login()
-    if not token:
-        exit(1)
-    print(f"✓ Token obtained: {token[:20]}...\n")
-    
-    # Create test idea
-    print("2. Creating test idea...")
-    idea_id = create_test_idea(token)
-    if not idea_id:
-        exit(1)
-    print(f"✓ Idea created: {idea_id}\n")
-    
-    # Delete idea
-    print("3. Deleting idea...")
-    if not delete_idea(token, idea_id):
-        exit(1)
-    print()
-    
-    # Verify deletion
-    print("4. Verifying deletion...")
-    verify_deleted(token, idea_id)
-    print("\n✓ All tests passed!")
+    unittest.main(verbosity=2)

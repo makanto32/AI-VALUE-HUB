@@ -1,6 +1,6 @@
-# AI Opportunity Hub Azure Foundation
+# AI Value Hub Azure Foundation
 
-Infraestructura base para desplegar AI Opportunity Hub en Azure antes de publicar Container Apps por MVP.
+Infraestructura base y artefactos operativos para desplegar AI Value Hub en Azure Container Apps.
 
 ## Recursos incluidos
 - Azure Container Apps Environment.
@@ -12,10 +12,10 @@ Infraestructura base para desplegar AI Opportunity Hub en Azure antes de publica
 - User Assigned Managed Identity.
 - PostgreSQL Flexible Server opcional.
 
-## Alcance del runtime agentico
-- Los agentes de negocio, validacion tecnica y composicion de respuesta se crearan en Microsoft Foundry.
-- Esta infraestructura prepara la base de hosting, observabilidad, secretos y persistencia para integrarlos despues.
-- El runtime de Foundry no se esta desplegando en este foundation inicial.
+## Alcance del runtime
+- La aplicacion actual ejecuta validaciones deterministicas y un orquestador local; no llama a Microsoft Foundry.
+- Esta foundation prepara hosting, observabilidad, secretos y persistencia para una integracion futura si se valida su necesidad.
+- La plantilla Bicep crea el Container Apps Environment, pero las aplicaciones se administran hoy mediante manifiestos y scripts separados.
 
 ## Despliegue rapido
 ```powershell
@@ -52,6 +52,7 @@ Edita `main.parameters.json` para cambiar:
 ## Notas
 - `enablePostgres` esta desactivado por defecto para evitar requerir un secreto en el primer despliegue.
 - `enableAcr` esta desactivado por defecto porque la suscripcion actual no soporta ACR.
-- Cuando quieras habilitar PostgreSQL, agrega `postgresAdminLogin` y `postgresAdminPassword` en la llamada de despliegue.
+- Habilitar PostgreSQL solo crea el recurso. La API actual usa `sqlite3`; se requiere migrar driver, esquema y configuracion antes de conectarla.
+- Cuando quieras aprovisionar PostgreSQL, agrega `postgresAdminLogin` y `postgresAdminPassword` en la llamada de despliegue.
 - Este paquete crea la base para que luego publiquemos `frontend` y `api` como Container Apps usando imagenes versionadas por MVP.
-- Los endpoints, claves o identificadores de Foundry deben resolverse via Key Vault o configuracion segura cuando integremos los agentes.
+- Los endpoints, claves o identificadores de una futura integracion con Foundry deben resolverse via identidad administrada, Key Vault o configuracion segura.

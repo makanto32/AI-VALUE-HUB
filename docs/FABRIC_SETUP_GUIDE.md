@@ -247,7 +247,7 @@ $DatasetId = "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
 The API includes an endpoint to refresh the Medallion pipeline:
 
 ```powershell
-$token = "your-jwt-token"
+$token = "your-demo-bearer-token"
 
 curl -X POST https://your-api/admin/metrics/semantic/refresh `
   -H "Authorization: Bearer $token" `

@@ -1,74 +1,59 @@
-#!/usr/bin/env python
-"""Test del algoritmo mejorado de detección de duplicidad"""
+#!/usr/bin/env python3
+"""Isolated regression test for the active intake duplicate gate."""
 
-from api.app.matching_service import (
-    _calculate_keyword_similarity,
-    _calculate_string_similarity,
-    _calculate_concept_overlap,
-    _normalize_text_for_semantic_comparison,
-    _apply_semantic_synonyms,
-)
+import os
+import tempfile
+import unittest
+from pathlib import Path
 
-# Test casos de uso reales
-test_cases = [
-    {
-        "name": "Predicción vs Predictor",
-        "text1": "Prediccion de Rotacion de Clientes Premium",
-        "text2": "Sistema Predictor de Rotacion de Clientes Premium"
-    },
-    {
-        "name": "Con descripción reducida",
-        "text1": "Prediccion de Rotacion de Clientes Premium - Análisis predictivo",
-        "text2": "Sistema Predictor de Rotacion de Clientes Premium"
-    },
-    {
-        "name": "Distinto wording, mismo objetivo",
-        "text1": "Detección de fraude en transacciones",
-        "text2": "Sistema de identificación de transacciones fraudulentas"
-    }
-]
 
-print("\n" + "="*80)
-print("TEST: Análisis de Duplicidad Semántica Mejorado")
-print("="*80)
+_TEMP_DIRECTORY = tempfile.TemporaryDirectory(prefix="aihub-duplicate-gate-")
+os.environ["AIHUB_DB_PATH"] = str(Path(_TEMP_DIRECTORY.name) / "duplicates.db")
+os.environ["AIHUB_AUTH_PROVIDER"] = "demo"
 
-for test in test_cases:
-    print(f"\n📋 {test['name']}")
-    print(f"   Texto 1: {test['text1']}")
-    print(f"   Texto 2: {test['text2']}")
-    
-    # Similitud de keywords
-    kw_sim = _calculate_keyword_similarity(test['text1'], test['text2'])
-    
-    # Similitud estructural
-    str_sim = _calculate_string_similarity(test['text1'], test['text2'])
-    
-    # Solapamiento conceptual
-    concept_sim = _calculate_concept_overlap(test['text1'], test['text2'])
-    
-    # Normalización
-    norm1 = _normalize_text_for_semantic_comparison(test['text1'])
-    norm2 = _normalize_text_for_semantic_comparison(test['text2'])
-    
-    # Sinónimos
-    syn1 = _apply_semantic_synonyms(test['text1'])
-    syn2 = _apply_semantic_synonyms(test['text2'])
-    
-    print(f"\n   Resultados:")
-    print(f"   - Keywords Similarity:   {kw_sim:6.2f}%")
-    print(f"   - String Similarity:     {str_sim:6.2f}%")
-    print(f"   - Concept Overlap:       {concept_sim:6.2f}%")
-    print(f"   - Max Score:             {max(kw_sim, str_sim, concept_sim):6.2f}%")
-    
-    print(f"\n   Análisis Semántico:")
-    print(f"   - Normalizado 1: {norm1}")
-    print(f"   - Normalizado 2: {norm2}")
-    print(f"   - Conceptos en 1: {syn1}")
-    print(f"   - Conceptos en 2: {syn2}")
-    
-    is_duplicate = concept_sim > 60 or max(kw_sim, str_sim) > 50
-    print(f"\n   ⚠️  DETECTA DUPLICIDAD: {'✓ SÍ' if is_duplicate else '✗ NO'}")
+from fastapi.testclient import TestClient
 
-print("\n" + "="*80)
-print("✓ Tests completados")
-print("="*80)
+from api.app.main import app
+
+
+class DuplicateGateTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.client = TestClient(app)
+        login = cls.client.post(
+            "/auth/login",
+            json={"username": "analista.finanzas", "password": "Demo1234!"},
+        )
+        assert login.status_code == 200, login.text
+        cls.headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.client.close()
+        _TEMP_DIRECTORY.cleanup()
+
+    def test_normalized_title_duplicate_returns_conflict(self) -> None:
+        original = {
+            "tenant_id": "contoso-demo",
+            "title": "Customer Churn Early Warning",
+            "problem_statement": "Premium customers leave without enough warning for retention teams to intervene.",
+            "expected_value": "Save USD 250000 annually by reducing premium customer churn by 20 percent.",
+            "affected_users": ["customer-success"],
+            "source_language": "en",
+        }
+        created = self.client.post("/ideas/intake", json=original, headers=self.headers)
+        self.assertEqual(created.status_code, 200, created.text)
+
+        duplicate = dict(original)
+        duplicate["title"] = "  CUSTOMER CHURN: EARLY WARNING!  "
+        duplicate["problem_statement"] = "Premium customer departures need earlier intervention signals for retention teams."
+        conflict = self.client.post("/ideas/intake", json=duplicate, headers=self.headers)
+
+        self.assertEqual(conflict.status_code, 409, conflict.text)
+        detail = conflict.json()["detail"]
+        self.assertEqual(detail["duplicate_idea"]["idea_id"], created.json()["idea_id"])
+        self.assertEqual(detail["duplicate_idea"]["owner_display_name"], "Ana Finanzas")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
