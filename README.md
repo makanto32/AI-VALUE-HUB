@@ -4,6 +4,11 @@ Repositorio de referencia para partners que implementan AI VALUE HUB en Azure.
 Incluye arquitectura, seguridad, infraestructura como codigo y automatizacion para
 llevar una instancia desde sandbox hasta produccion.
 
+**Architecture design:** Marco Antonio Salas Robles, Sr. Cloud Solution Architect.
+
+> [!IMPORTANT]
+> This is a personal, community-maintained project. It is not an official Microsoft product or Azure service, and Microsoft does not provide support or warranties for it. The repository contains a working demo, infrastructure templates, and operational guidance; items marked as roadmap are not implemented. Review security, compliance, availability, and cost requirements before using it in production.
+
 ## Que es AI VALUE HUB
 
 AI VALUE HUB es una plataforma para convertir ideas de inteligencia artificial en
