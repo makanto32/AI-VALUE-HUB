@@ -15,6 +15,7 @@ coverage/
 .vscode/
 *.swp
 *.swo
+~$*
 .DS_Store
 *.db-shm
 *.db-wal
