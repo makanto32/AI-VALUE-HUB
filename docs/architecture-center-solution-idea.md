@@ -111,8 +111,13 @@ Use the [Azure deployment plan](AZURE_DEPLOYMENT_PLAN.md) and the [infrastructur
 
 ## Contributors
 
-- Repository maintainer: [makanto32](https://github.com/makanto32)
-- Architecture, security, Responsible AI, and independent implementation reviewers: to be confirmed
+*Microsoft maintains the published article. The following contributor designed the original architecture and reference implementation.*
+
+Principal architect:
+
+- Marco Antonio Salas Robles | Sr. Cloud Solution Architect | [GitHub](https://github.com/makanto32)
+
+Architecture, security, Responsible AI, and independent implementation reviewers are to be confirmed.
 
 ## Next steps
 

@@ -8,6 +8,10 @@ This proposal introduces a reusable Azure solution idea for governing AI initiat
 
 Govern and prioritize enterprise AI initiatives on Azure
 
+## Original architecture attribution
+
+The AI Value Hub architecture was designed by Marco Antonio Salas Robles, Sr. Cloud Solution Architect. The proposed article should preserve this attribution in its Contributors section, subject to Azure Architecture Center editorial review.
+
 ## Content type
 
 Solution Idea

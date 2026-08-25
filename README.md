@@ -2,6 +2,8 @@
 
 Reference implementation and deployment kit for governing and prioritizing enterprise AI initiatives on Azure.
 
+**Architecture design:** Marco Antonio Salas Robles, Sr. Cloud Solution Architect.
+
 > [!IMPORTANT]
 > This is a personal, community-maintained project. It is not an official Microsoft product or Azure service, and Microsoft does not provide support or warranties for it. The repository contains a working demo, infrastructure templates, and operational guidance; items marked as roadmap are not implemented. Review security, compliance, availability, and cost requirements before using it in production.
 
