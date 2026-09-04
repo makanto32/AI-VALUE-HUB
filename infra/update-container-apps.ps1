@@ -57,6 +57,10 @@ function Update-ContainerAppImage {
         [string]$Image
     )
 
+    if ($Image -match ':latest$') {
+        throw "La etiqueta mutable 'latest' no esta permitida. Usa una version, SHA o digest inmutable."
+    }
+
     Write-Host "Actualizando Container App '$Name' con imagen '$Image'..." -ForegroundColor Cyan
 
     $exists = az containerapp show --resource-group $ResourceGroupName --name $Name --query name -o tsv 2>$null

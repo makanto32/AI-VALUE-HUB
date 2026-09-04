@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 *.log
+*.out
 .env
 .env.*
 !.env.example
@@ -22,3 +23,8 @@ coverage/
 *.db-wal
 *.db
 aihub.db*
+/data/
+/infra/main.json
+/infra/*-live.yaml
+/infra/aca-*.yaml
+/docs/ASSESSMENT_*.docx

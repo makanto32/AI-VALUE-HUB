@@ -39,6 +39,7 @@ FRONTEND_PORT=8080
 API_PORT=8000
 VITE_API_URL=http://localhost:8000
 AIHUB_AUTH_PROVIDER=demo
+AIHUB_ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
 ```
 
 ### Verify
@@ -77,3 +78,5 @@ Do not promote the Compose configuration directly to a client environment. Compl
 9. Replace sample data and demo credentials, and run client security, Responsible AI, compliance, performance, and cost reviews.
 
 The files under `infra/` are references tied to an Azure Container Apps design. Parameterize client-specific resource IDs, domains, registry names, secrets, and regions before deployment; do not reuse a captured `*-live.yaml` resource export as a general-purpose template.
+
+For image publication, managed identity, deployment, rollback, and the complete security gap matrix, see [ACR and production deployment guide](ACR_PRODUCTION_DEPLOYMENT.md).

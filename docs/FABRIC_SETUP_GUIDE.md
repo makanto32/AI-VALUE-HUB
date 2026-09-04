@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides step-by-step instructions to set up the **Microsoft Fabric workspace and semantic model** required for the AI Opportunity Hub Admin Dashboard to function correctly.
+This guide provides step-by-step instructions to set up the **Microsoft Fabric workspace and semantic model** required for the AI Value Hub Admin Dashboard to function correctly.
 
 ## Prerequisites
 
@@ -78,7 +78,7 @@ cd c:\Projects\AI-OPPORTUNIY-HUB
 **Expected Output:**
 ```
 ============================================================================
-AI OPPORTUNITY HUB - FABRIC ADMIN DASHBOARD SETUP
+AI VALUE HUB - FABRIC ADMIN DASHBOARD SETUP
 ============================================================================
 
 → Validating prerequisites...

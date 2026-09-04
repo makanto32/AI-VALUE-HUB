@@ -84,7 +84,7 @@ Automated scores and recommendations can amplify incomplete context, subjective 
 
 ## Repository URL
 
-https://github.com/makanto32/AI-Opportunity-Hub
+https://github.com/makanto32/AI-VALUE-HUB
 
 The implementation repository remains separately maintained under the MIT License. An Architecture Center contribution would contain editorial guidance and links to the deployment kit, not a copy of the full application.
 

@@ -1,6 +1,6 @@
 targetScope = 'resourceGroup'
 
-@description('Primary Azure region for AI Opportunity Hub resources.')
+@description('Primary Azure region for AI Value Hub resources.')
 param location string = resourceGroup().location
 
 @description('Base name used to compose Azure resource names.')
@@ -11,7 +11,7 @@ param environmentName string = 'dev'
 
 @description('Optional tags to stamp across provisioned resources.')
 param tags object = {
-  application: 'AI Opportunity Hub'
+  application: 'AI Value Hub'
   environment: environmentName
   managedBy: 'Bicep'
 }
@@ -104,6 +104,7 @@ resource artifactsContainer 'Microsoft.Storage/storageAccounts/blobServices/cont
 }
 
 resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = if (enableAcr) {
+  #disable-next-line BCP334
   name: acrName
   location: location
   sku: {
@@ -176,6 +177,7 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
 }
 
 resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview' = if (enablePostgres) {
+  #disable-next-line BCP334
   name: postgresServerName
   location: location
   sku: {
@@ -212,8 +214,8 @@ resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview'
 
 output containerAppsEnvironmentId string = containerAppsEnvironment.id
 output containerAppsEnvironmentName string = containerAppsEnvironment.name
-output acrLoginServer string = enableAcr ? registry.properties.loginServer : ''
-output acrResourceId string = enableAcr ? registry.id : ''
+output acrLoginServer string = enableAcr ? registry!.properties.loginServer : ''
+output acrResourceId string = enableAcr ? registry!.id : ''
 output storageAccountName string = storage.name
 output storageBlobEndpoint string = storage.properties.primaryEndpoints.blob
 output keyVaultName string = keyVault.name
@@ -221,6 +223,6 @@ output keyVaultUri string = keyVault.properties.vaultUri
 output applicationInsightsConnectionString string = appInsights.properties.ConnectionString
 output userAssignedIdentityId string = identity.id
 output userAssignedIdentityClientId string = identity.properties.clientId
-output postgresServerName string = enablePostgres ? postgres.name : ''
+output postgresServerName string = enablePostgres ? postgres!.name : ''
 output documentsContainerName string = documentsContainer.name
 output artifactsContainerName string = artifactsContainer.name

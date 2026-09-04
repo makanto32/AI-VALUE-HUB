@@ -87,6 +87,14 @@ CANONICAL_LANGUAGE = "es"
 SUPPORTED_LANGUAGES = ["es", "en", "pt"]
 AUTO_SEED_CONTEXT = os.getenv("AIHUB_AUTO_SEED_CONTEXT", "true").lower() in {"1", "true", "yes"}
 AUTH_PROVIDER = os.getenv("AIHUB_AUTH_PROVIDER", "demo").lower()
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "AIHUB_ALLOWED_ORIGINS",
+        "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5174,http://127.0.0.1:5174",
+    ).split(",")
+    if origin.strip()
+]
 DEMO_CONTEXT_BY_TENANT = {
     "contoso-demo": {
         "company_name": "Contoso Financial Services",
@@ -156,7 +164,7 @@ def _resolve_demo_context_seed(tenant_id: str) -> dict[str, object] | None:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -2466,7 +2474,12 @@ def me(current_user: UserProfile = Depends(get_current_user)) -> UserProfile:
 
 
 @app.get("/context/{tenant_id}", response_model=CompanyContext)
-def get_company_context(tenant_id: str) -> CompanyContext:
+def get_company_context(
+    tenant_id: str,
+    current_user: UserProfile = Depends(get_current_user),
+) -> CompanyContext:
+    if tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes consultar contexto de otro tenant")
     _seed_demo_context_if_needed(tenant_id)
     context = company_context_store.get(tenant_id)
     if context is None:
@@ -2478,8 +2491,14 @@ def get_company_context(tenant_id: str) -> CompanyContext:
 
 
 @app.put("/context/{tenant_id}", response_model=CompanyContext)
-def upsert_company_context(tenant_id: str, request: UpsertCompanyContextRequest) -> CompanyContext:
-    # Backward-compat endpoint kept without auth to avoid breaking existing clients.
+def upsert_company_context(
+    tenant_id: str,
+    request: UpsertCompanyContextRequest,
+    current_user: UserProfile = Depends(get_current_user),
+) -> CompanyContext:
+    _require_admin(current_user)
+    if tenant_id != current_user.tenant_id:
+        raise HTTPException(status_code=403, detail="No puedes modificar contexto de otro tenant")
     context = _build_company_context(tenant_id, request)
     return company_context_store.save(context)
 

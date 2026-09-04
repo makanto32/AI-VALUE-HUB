@@ -1,7 +1,7 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Complete Fabric workspace and semantic model setup for AI Opportunity Hub Admin Dashboard
+    Complete Fabric workspace and semantic model setup for AI Value Hub Admin Dashboard
     
 .DESCRIPTION
     This script automates the entire Fabric/Power BI setup required for the admin dashboard:
@@ -436,7 +436,7 @@ function Export-EnvironmentVariables {
     )
     
     $envContent = @"
-# AI Opportunity Hub - Fabric Admin Dashboard Configuration
+# AI Value Hub - Fabric Admin Dashboard Configuration
 # Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 
 # Dashboard metrics source: local (Medallion), semantic (local JSON), or powerbi (Fabric API)
@@ -504,7 +504,7 @@ function Export-SetupSummary {
 # ============================================================================
 
 function Main {
-    Write-Title "AI OPPORTUNITY HUB - FABRIC ADMIN DASHBOARD SETUP"
+    Write-Title "AI VALUE HUB - FABRIC ADMIN DASHBOARD SETUP"
     
     try {
         # Step 1: Validate prerequisites

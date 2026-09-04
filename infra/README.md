@@ -20,8 +20,12 @@ Infraestructura base y artefactos operativos para desplegar AI Value Hub en Azur
 ## Despliegue rapido
 ```powershell
 Set-Location infra
-.\deploy-foundation.ps1
+.\deploy-foundation.ps1 `
+	-ResourceGroupName "rg-ai-value-hub-test" `
+	-Location "eastus"
 ```
+
+La plantilla crea la base compartida, no las dos Container Apps. Consulta `docs/ACR_PRODUCTION_DEPLOYMENT.md` para crear imagenes OCI versionadas, configurar identidad administrada con `AcrPull`, desplegar workloads y completar los controles de produccion.
 
 ## Actualizar contenedores en Azure Container Apps
 Para publicar una nueva imagen de API y/o frontend en Container Apps ya existentes:
@@ -29,11 +33,11 @@ Para publicar una nueva imagen de API y/o frontend en Container Apps ya existent
 ```powershell
 Set-Location infra
 .\update-container-apps.ps1 `
-	-ResourceGroupName "rg-ai-opportunity-hub-dev" `
-	-ApiContainerAppName "aiopportunityhub-dev-api" `
-	-ApiImage "<acr-login-server>/aihub/api:mvp2.1" `
-	-FrontendContainerAppName "aiopportunityhub-dev-frontend" `
-	-FrontendImage "<acr-login-server>/aihub/frontend:mvp2.1"
+	-ResourceGroupName "rg-ai-value-hub-test" `
+	-ApiContainerAppName "ai-value-hub-test-api" `
+	-ApiImage "<acr-login-server>/ai-value-hub/api:1.0.0" `
+	-FrontendContainerAppName "ai-value-hub-test-frontend" `
+	-FrontendImage "<acr-login-server>/ai-value-hub/frontend:1.0.0"
 ```
 
 Notas:
@@ -54,5 +58,5 @@ Edita `main.parameters.json` para cambiar:
 - `enableAcr` esta desactivado por defecto porque la suscripcion actual no soporta ACR.
 - Habilitar PostgreSQL solo crea el recurso. La API actual usa `sqlite3`; se requiere migrar driver, esquema y configuracion antes de conectarla.
 - Cuando quieras aprovisionar PostgreSQL, agrega `postgresAdminLogin` y `postgresAdminPassword` en la llamada de despliegue.
-- Este paquete crea la base para que luego publiquemos `frontend` y `api` como Container Apps usando imagenes versionadas por MVP.
+- Este paquete crea la base para publicar `frontend` y `api` como Container Apps usando etiquetas OCI inmutables por version o commit.
 - Los endpoints, claves o identificadores de una futura integracion con Foundry deben resolverse via identidad administrada, Key Vault o configuracion segura.

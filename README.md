@@ -28,12 +28,12 @@ See full terms in [LICENSE](LICENSE).
 
 Access the project's visual views directly. All views below are read-only and require no local installation:
 
-- **📊 [Control Center](https://makanto32.github.io/AI-Opportunity-Hub/)** - Main navigation dashboard
-- **💡 [AI Value Hub Interactive Demo](https://makanto32.github.io/AI-Opportunity-Hub/ai-value-hub-demo.html)** - Visual workflow of complete journey
-- **🏗️ [Technical Architecture (EN)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.html)** - Component and integration diagrams
-- **🏗️ [Technical Architecture (ES)](https://makanto32.github.io/AI-Opportunity-Hub/architecture-diagram.es.html)** - Spanish localized version
-- **📈 [Microsoft Fabric Architecture + Executive Dashboard](https://makanto32.github.io/AI-Opportunity-Hub/architecture-fabric-live.html)** - Live Power BI/Fabric integration for KPI metrics
-- **📖 [Use Case Factory & Company Context Engine](https://makanto32.github.io/AI-Opportunity-Hub/AI_Use_Case_Factory_Company_Context_Engine_EN.html)** - Architectural reference document and patterns
+- **📊 [Control Center](https://makanto32.github.io/AI-VALUE-HUB/)** - Main navigation dashboard
+- **💡 [AI Value Hub Interactive Demo](https://makanto32.github.io/AI-VALUE-HUB/ai-value-hub-demo.html)** - Visual workflow of complete journey
+- **🏗️ [Technical Architecture (EN)](https://makanto32.github.io/AI-VALUE-HUB/architecture-diagram.html)** - Component and integration diagrams
+- **🏗️ [Technical Architecture (ES)](https://makanto32.github.io/AI-VALUE-HUB/architecture-diagram.es.html)** - Spanish localized version
+- **📈 [Microsoft Fabric Architecture + Executive Dashboard](https://makanto32.github.io/AI-VALUE-HUB/architecture-fabric-live.html)** - Live Power BI/Fabric integration for KPI metrics
+- **📖 [Use Case Factory & Company Context Engine](https://makanto32.github.io/AI-VALUE-HUB/AI_Use_Case_Factory_Company_Context_Engine_EN.html)** - Architectural reference document and patterns
 
 ---
 
@@ -222,7 +222,7 @@ See the [project roadmap](#roadmap---not-yet-implemented) for the broader delive
 ## 📁 Project Structure
 
 ```
-ai-opportunity-hub/
+AI-VALUE-HUB/
 ├── api/                           # Backend FastAPI
 │   ├── app/
 │   │   ├── main.py               # REST API with 48 application endpoints
@@ -292,8 +292,8 @@ To use different ports or a browser-accessible API URL, copy `.env.example` to `
 
 **1. Clone Repository**
 ```bash
-git clone https://github.com/makanto32/AI-Opportunity-Hub.git
-cd AI-Opportunity-Hub
+git clone https://github.com/makanto32/AI-VALUE-HUB.git
+cd AI-VALUE-HUB
 ```
 
 **2. Configure Python Environment**
@@ -358,6 +358,8 @@ npm run dev
 - **[CLIENT_ARCHITECTURE_REFERENCE.md](docs/CLIENT_ARCHITECTURE_REFERENCE.md)** - Architectural diagram and description for development teams
 - **[FABRIC_MEDALLION_SEMANTIC_SETUP.md](docs/FABRIC_MEDALLION_SEMANTIC_SETUP.md)** - Microsoft Fabric setup for Executive Dashboard
 - **[AZURE_DEPLOYMENT_PLAN.md](docs/AZURE_DEPLOYMENT_PLAN.md)** - Deployment plan for Azure Container Apps
+- **[ACR_PRODUCTION_DEPLOYMENT.md](docs/ACR_PRODUCTION_DEPLOYMENT.md)** - Versioned OCI images, ACR promotion, Container Apps, and production security gates
+- **[PARTNER_DEPLOYMENT_GUIDE.md](docs/PARTNER_DEPLOYMENT_GUIDE.md)** - Fast local evaluation and production readiness overview
 - **[MVP_IMPLEMENTATION_LOG.md](docs/MVP_IMPLEMENTATION_LOG.md)** - Detailed changelog of implementations
 - **[Architecture Center readiness](docs/ARCHITECTURE_CENTER_READINESS.md)** - Requirement-by-requirement status and submission gates
 - **[Architecture Center proposal](docs/architecture-center-proposal.md)** - English proposal for a Solution Idea contribution
@@ -396,7 +398,7 @@ This project is licensed under **MIT License**. See [LICENSE](LICENSE) for full 
 
 ## 👥 Contact & Support
 For technical questions, issues, or feature proposals:
-1. Create a [GitHub Issue](https://github.com/makanto32/AI-Opportunity-Hub/issues)
+1. Create a [GitHub Issue](https://github.com/makanto32/AI-VALUE-HUB/issues)
 2. Describe the problem/feature with clear context
 3. Include reproduction steps (if bug) or use cases (if feature)
 

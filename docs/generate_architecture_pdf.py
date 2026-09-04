@@ -20,12 +20,12 @@ if 'ClientCaption' not in styles.byName:
     styles.add(ParagraphStyle(name='ClientCaption', parent=styles['BodyText'], fontName='Helvetica-Oblique', fontSize=9, leading=11, textColor=colors.HexColor('#4b5563')))
 
 story = []
-story.append(Paragraph("AI Opportunity Hub\nReference Architecture", styles['ClientTitle']))
+story.append(Paragraph("AI Value Hub\nReference Architecture", styles['ClientTitle']))
 story.append(Paragraph("Client-ready architecture overview for solution evaluation, implementation planning, and reuse.", styles['ClientBody']))
 story.append(Spacer(1, 0.3 * cm))
 
 story.append(Paragraph("1. Solution Overview", styles['ClientHeading']))
-story.append(Paragraph("AI Opportunity Hub is a reference solution that helps organizations capture ideas, evaluate technical feasibility, generate architecture packages, and prepare implementation guidance for AI initiatives.", styles['ClientBody']))
+story.append(Paragraph("AI Value Hub is a reference solution that helps organizations capture ideas, evaluate technical feasibility, generate architecture packages, and prepare implementation guidance for AI initiatives.", styles['ClientBody']))
 story.append(Spacer(1, 0.2 * cm))
 
 story.append(Paragraph("2. Logical Layers", styles['ClientHeading']))
