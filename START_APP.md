@@ -1,45 +1,28 @@
-# 🚀 Iniciando AI Value Hub
+# Iniciar AI Value Hub
 
-## Servidores Activos:
+## Evaluacion con Docker
 
-✅ **Frontend (Vite Dev)**: http://localhost:5175
-✅ **Backend API**: http://127.0.0.1:8000
+Desde la raiz del repositorio:
 
----
+```powershell
+docker compose up --build
+```
 
-## Pasos:
+- Aplicacion: `http://localhost:8080`
+- API y Swagger: `http://localhost:8000/docs`
+- Usuario administrador: `admin.valuehub`
+- Contrasena: `Demo1234!`
 
-1. **Abre el navegador** en: http://localhost:5175
+La primera pantalla permite seleccionar ES, EN o PT antes de continuar al inicio de sesion. Para detener los contenedores sin borrar los datos, ejecuta `docker compose down`. Para reiniciar completamente la evaluacion, ejecuta `docker compose down --volumes`.
 
-2. **Autenticarse** con:
-   - Usuario: `admin.valuehub`
-   - Contraseña: `Demo1234!`
+## Desarrollo local en Windows
 
-3. **Haz clic** en `📊 Dashboard Ejecutivo` en el header superior
+Después de crear `.venv`, instalar `api/requirements.txt` y ejecutar `npm install` en `frontend`, usa:
 
-4. **Verás**:
-   - Tabs alineados verticalmente a la derecha (compactos y organizados)
-   - Dashboard con métricas de valor del IA
-   - 3 ideas con diferentes estados (DRAFT, NEEDS_CLARIFICATION, VIABLE)
-   - Datos persistidos en la base de datos
+```powershell
+.\start-local-session.ps1
+```
 
----
+El script inicia la API en `http://127.0.0.1:8000` y Vite en `http://127.0.0.1:5174`.
 
-## Características del Dashboard:
-
-- ✅ Reducción de retrabajo (%)
-- ✅ Duplicados evitados
-- ✅ Participación de colaboradores
-- ✅ Tasa de adopción de IA
-- ✅ Métricas de producción
-- ✅ Análisis de ROI
-- ✅ Tabla de colaboradores principales
-
----
-
-## Tabs Admin (compactos):
-- Use Cases
-- Token Cost
-- Metrics
-
-Todos organizados verticalmente a la derecha del panel admin.
+Consulta [README.md](README.md) para la instalacion completa y [docs/PARTNER_DEPLOYMENT_GUIDE.md](docs/PARTNER_DEPLOYMENT_GUIDE.md) para preparar un despliegue de cliente.

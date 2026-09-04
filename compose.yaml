@@ -1,0 +1,29 @@
+name: ai-value-hub
+
+services:
+  api:
+    build:
+      context: ./api
+    environment:
+      AIHUB_AUTH_PROVIDER: ${AIHUB_AUTH_PROVIDER:-demo}
+      AIHUB_DB_PATH: /data/aihub.db
+      AIHUB_LOCAL_BLOB_ROOT: /data/blob
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - aihub-data:/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    depends_on:
+      - api
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    restart: unless-stopped
+
+volumes:
+  aihub-data:

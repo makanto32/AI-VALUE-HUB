@@ -98,7 +98,7 @@ const uiText = {
     contextStatusLoaded: "Estado contexto: cargado",
     contextStatusPending: "Estado contexto: pendiente",
     contextRegistered: "Contexto empresarial registrado",
-    contextRegisteredBody: "El contexto ya fue guardado y se aplica automaticamente en la evaluacion de ideas. La edicion quedara disponible para perfil admin en una fase posterior.",
+    contextRegisteredBody: "El contexto guardado se aplica automaticamente en la evaluacion de ideas y puede ser editado por el perfil admin.",
     newIdea: "Nueva idea",
     newIdeaSubtitle: "La calificacion usa contexto de negocio + filtro tecnico de viabilidad.",
     title: "Titulo",
@@ -253,6 +253,10 @@ const uiText = {
     technicalValidation: "Validacion tecnica",
     technicalReviewPending: "En revisión técnica",
     technicalApprove: "Aprobar",
+    technicalActionInProgress: "Procesando...",
+    technicalQueueAccessDenied: "Tu sesión no tiene permisos para acceder a la cola técnica.",
+    technicalQueueLoadError: "No fue posible cargar la cola técnica.",
+    technicalApprovalRequired: "Primero completa la aprobación técnica humana.",
     technicalChat: "Chat técnico con agente",
     technicalChatPlaceholder: "Pregunta clarifications técnicas al agente...",
     technicalSendMessage: "Enviar",
@@ -353,7 +357,7 @@ const uiText = {
     contextStatusLoaded: "Context status: loaded",
     contextStatusPending: "Context status: pending",
     contextRegistered: "Business context registered",
-    contextRegisteredBody: "Context has been saved and is applied automatically during idea evaluation. Editing will be enabled later for admin profile.",
+    contextRegisteredBody: "Saved context is applied automatically during idea evaluation and can be edited by the admin profile.",
     newIdea: "New idea",
     newIdeaSubtitle: "Scoring uses business context plus a technical feasibility filter.",
     title: "Title",
@@ -509,6 +513,10 @@ const uiText = {
     technicalValidation: "Technical Validation",
     technicalReviewPending: "Under technical review",
     technicalApprove: "Approve",
+    technicalActionInProgress: "Processing...",
+    technicalQueueAccessDenied: "Your session does not have permission to access the technical queue.",
+    technicalQueueLoadError: "The technical queue could not be loaded.",
+    technicalApprovalRequired: "Complete the human technical approval first.",
     technicalChat: "Technical chat with agent",
     technicalChatPlaceholder: "Ask technical clarifications to the agent...",
     technicalSendMessage: "Send",
@@ -609,7 +617,7 @@ const uiText = {
     contextStatusLoaded: "Status do contexto: carregado",
     contextStatusPending: "Status do contexto: pendente",
     contextRegistered: "Contexto empresarial registrado",
-    contextRegisteredBody: "O contexto ja foi salvo e se aplica automaticamente na avaliacao de ideias. A edicao ficara disponivel depois para perfil admin.",
+    contextRegisteredBody: "O contexto salvo se aplica automaticamente na avaliacao de ideias e pode ser editado pelo perfil admin.",
     newIdea: "Nova ideia",
     newIdeaSubtitle: "A classificacao usa contexto de negocio + filtro tecnico de viabilidade.",
     title: "Titulo",
@@ -766,6 +774,10 @@ const uiText = {
     technicalValidation: "Validacao tecnica",
     technicalReviewPending: "Em revisao tecnica",
     technicalApprove: "Aprovar",
+    technicalActionInProgress: "Processando...",
+    technicalQueueAccessDenied: "Sua sessao nao tem permissao para acessar a fila tecnica.",
+    technicalQueueLoadError: "Nao foi possivel carregar a fila tecnica.",
+    technicalApprovalRequired: "Conclua primeiro a aprovacao tecnica humana.",
     technicalChat: "Chat tecnico com agente",
     technicalChatPlaceholder: "Faca esclarecimentos tecnicos ao agente...",
     technicalSendMessage: "Enviar",
@@ -1030,6 +1042,8 @@ function App() {
   const [myIdeas, setMyIdeas] = useState([]);
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [technicalQueue, setTechnicalQueue] = useState([]);
+  const [technicalQueueError, setTechnicalQueueError] = useState("");
+  const [technicalActionKey, setTechnicalActionKey] = useState("");
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
   const [activeClarificationIdeaId, setActiveClarificationIdeaId] = useState("");
   const [activeTechnicalIdeaId, setActiveTechnicalIdeaId] = useState("");
@@ -1210,17 +1224,21 @@ function App() {
     try {
       const response = await apiFetch("/ideas/technical-queue");
       if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
         if (response.status === 403) {
           setTechnicalQueue([]);
+          setTechnicalQueueError(body.detail || t.technicalQueueAccessDenied);
           return;
         }
-        throw new Error("Error loading technical queue");
+        throw new Error(body.detail || t.technicalQueueLoadError);
       }
       const data = await response.json();
       setTechnicalQueue(data);
+      setTechnicalQueueError("");
     } catch (err) {
       console.error("Error loading technical queue:", err);
       setTechnicalQueue([]);
+      setTechnicalQueueError(err.message || t.technicalQueueLoadError);
     }
   }
 
@@ -1235,6 +1253,11 @@ function App() {
   }
 
   async function handleTechnicalAction(ideaId, path, method) {
+    const actionKey = `${ideaId}:${path}`;
+    if (technicalActionKey) {
+      return;
+    }
+    setTechnicalActionKey(actionKey);
     try {
       const response = await apiFetch(`/ideas/${ideaId}/${path}`, { method });
       if (!response.ok) {
@@ -1262,6 +1285,8 @@ function App() {
       await loadTechnicalQueue();
     } catch (err) {
       setError(err.message || t.errorUnexpected);
+    } finally {
+      setTechnicalActionKey("");
     }
   }
 
@@ -1270,6 +1295,11 @@ function App() {
     if (!reason || reason.trim().length < 5) {
       return;
     }
+    const actionKey = `${ideaId}:technical-rejection`;
+    if (technicalActionKey) {
+      return;
+    }
+    setTechnicalActionKey(actionKey);
     try {
       const response = await apiFetch(`/ideas/${ideaId}/technical-rejection`, {
         method: "POST",
@@ -1285,6 +1315,8 @@ function App() {
       await loadTechnicalQueue();
     } catch (err) {
       setError(err.message || t.errorUnexpected);
+    } finally {
+      setTechnicalActionKey("");
     }
   }
 
@@ -1391,7 +1423,7 @@ function App() {
     }
   }
 
-  async function handleDeleteIdea(ideaId) {
+  async function handleAdminDeleteIdea(ideaId) {
     if (!ideaId || !window.confirm(t.adminDeleteIdeaConfirm)) {
       return;
     }
@@ -2938,6 +2970,15 @@ function App() {
                 <>
                   <button type="button" onClick={() => setView("executiveDashboard")}>Dashboard</button>
                   <button type="button" onClick={() => setView("admin")}>{t.adminPanelTitle}</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowContextEditor(true);
+                      setView("main");
+                    }}
+                  >
+                    {t.contextTitle}
+                  </button>
                 </>
               )}
               {user.role === "technical" && (
@@ -3045,7 +3086,7 @@ function App() {
                             type="button"
                             className="btn-secondary"
                             style={{ marginTop: 8, marginRight: 4 }}
-                            onClick={() => handleDeleteIdea(item.idea_id)}
+                            onClick={() => handleAdminDeleteIdea(item.idea_id)}
                           >
                             {t.adminDeleteIdea}
                           </button>
@@ -3202,6 +3243,8 @@ function App() {
                 <h2>{t.technicalQueue}</h2>
                 <p>{t.technicalValidation}</p>
               </div>
+              {technicalQueueError && <p className="error" role="alert">{technicalQueueError}</p>}
+              {error && <p className="error" role="alert">{error}</p>}
               {technicalQueue.length > 0 ? (
                 <ul className="idea-list">
                   {technicalQueue.map((entry, index) => {
@@ -3329,8 +3372,9 @@ function App() {
                             type="button"
                             className="btn-approve"
                             onClick={() => handleTechnicalAction(idea.idea_id, "technical-approval", "POST")}
+                            disabled={Boolean(technicalActionKey)}
                           >
-                            {t.technicalApprove}
+                            {technicalActionKey === `${idea.idea_id}:technical-approval` ? t.technicalActionInProgress : t.technicalApprove}
                           </button>
                         ) : (
                           <button
@@ -3347,22 +3391,28 @@ function App() {
                           type="button"
                           className="btn-quiet"
                           onClick={() => handleTechnicalAction(idea.idea_id, "move-to-funding", "PATCH")}
+                          disabled={!idea.human_approved || !idea.architecture_package || Boolean(technicalActionKey)}
+                          title={idea.human_approved && idea.architecture_package ? "" : t.technicalApprovalRequired}
                         >
-                          {t.moveToFunding}
+                          {technicalActionKey === `${idea.idea_id}:move-to-funding` ? t.technicalActionInProgress : t.moveToFunding}
                         </button>
                         <button
                           type="button"
                           className="btn-quiet"
                           onClick={() => handleTechnicalAction(idea.idea_id, "move-to-development", "PATCH")}
+                          disabled={!idea.human_approved || !idea.architecture_package || Boolean(technicalActionKey)}
+                          title={idea.human_approved && idea.architecture_package ? "" : t.technicalApprovalRequired}
                         >
-                          {t.moveToDevelopment}
+                          {technicalActionKey === `${idea.idea_id}:move-to-development` ? t.technicalActionInProgress : t.moveToDevelopment}
                         </button>
                         <button
                           type="button"
                           className="btn-quiet"
                           onClick={() => handleTechnicalAction(idea.idea_id, "move-to-production", "PATCH")}
+                          disabled={!idea.human_approved || !idea.architecture_package || Boolean(technicalActionKey)}
+                          title={idea.human_approved && idea.architecture_package ? "" : t.technicalApprovalRequired}
                         >
-                          {t.moveToProduction}
+                          {technicalActionKey === `${idea.idea_id}:move-to-production` ? t.technicalActionInProgress : t.moveToProduction}
                         </button>
                         {idea.architecture_package && (
                           <button
@@ -3379,8 +3429,9 @@ function App() {
                           type="button"
                           className="btn-danger"
                           onClick={() => handleTechnicalReject(idea.idea_id)}
+                          disabled={Boolean(technicalActionKey)}
                         >
-                          {t.technicalReject}
+                          {technicalActionKey === `${idea.idea_id}:technical-rejection` ? t.technicalActionInProgress : t.technicalReject}
                         </button>
                       </div>
                     </li>

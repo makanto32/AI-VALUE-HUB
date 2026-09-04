@@ -264,7 +264,24 @@ ai-opportunity-hub/
 
 ---
 
-## 🚀 Local Development Setup
+## Partner Quick Start (Docker)
+
+Run the same frontend and API shown in this repository with Docker Desktop or Docker Engine with Compose:
+
+```bash
+git clone https://github.com/makanto32/AI-VALUE-HUB.git
+cd AI-VALUE-HUB
+docker compose up --build
+```
+
+Open `http://localhost:8080`, select a language, and sign in with `admin.valuehub / Demo1234!`. API documentation is available at `http://localhost:8000/docs`. Application data and uploaded context files persist in the named Docker volume `ai-value-hub_aihub-data`.
+
+To use different ports or a browser-accessible API URL, copy `.env.example` to `.env`, edit the values, and rebuild with `docker compose up --build`. See [Partner deployment guide](docs/PARTNER_DEPLOYMENT_GUIDE.md) for architecture, verification, and production hardening.
+
+> [!WARNING]
+> Docker Compose starts an evaluation environment with demo authentication and SQLite. It is not a production security or availability configuration.
+
+## Local Development Setup
 
 ### Requirements
 - Python 3.11+ with pip
@@ -311,13 +328,13 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 npm install
 npm run dev
 
-# Frontend running at http://localhost:5173
+# Frontend running at http://localhost:5174
 # Or use .env.local for remote API:
 # VITE_API_URL=http://127.0.0.1:8000
 ```
 
 **5. Access Application**
-- **Frontend**: http://localhost:5173/
+- **Frontend**: http://localhost:5174/
 - **API Docs (Swagger)**: http://127.0.0.1:8000/docs
 - **Demo Users**:
   - Business: `analista.finanzas / Demo1234!`
@@ -331,7 +348,7 @@ npm run dev
 | **API not responding** | Verify `uvicorn` is running on port 8000 |
 | **Frontend connects to Azure API** | Verify `.env.local` has `VITE_API_URL=http://127.0.0.1:8000` |
 | **Login fails** | Verify user/password matches table above (case-sensitive) |
-| **CORS errors** | Verify CORS middleware in `api/app/main.py` allows `http://localhost:5173` |
+| **CORS errors** | Verify CORS middleware in `api/app/main.py` allows the frontend origin |
 
 ---
 

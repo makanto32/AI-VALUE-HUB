@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:20-bullseye AS build
 
 WORKDIR /app
 
-ARG VITE_API_URL=https://aihub-api-dev.yellowwave-f693504a.eastus.azurecontainerapps.io
+ARG VITE_API_URL=http://localhost:8000
 ENV VITE_API_URL=${VITE_API_URL}
 
 COPY package.json package-lock.json ./
