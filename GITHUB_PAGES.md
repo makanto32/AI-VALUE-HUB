@@ -30,4 +30,3 @@ El repositorio sirve automáticamente:
 - `index.html` - Página de navegación principal
 - `*.html` - Vistas de arquitectura y demos
 - `architecture-fabric-live.html` - Vista live de arquitectura Microsoft Fabric + Dashboard
-- `docs/AI_Opportunity_Hub_Architecture_Reference.pdf` - Referencia en PDF

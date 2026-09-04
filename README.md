@@ -360,10 +360,6 @@ npm run dev
 - **[AZURE_DEPLOYMENT_PLAN.md](docs/AZURE_DEPLOYMENT_PLAN.md)** - Deployment plan for Azure Container Apps
 - **[ACR_PRODUCTION_DEPLOYMENT.md](docs/ACR_PRODUCTION_DEPLOYMENT.md)** - Versioned OCI images, ACR promotion, Container Apps, and production security gates
 - **[PARTNER_DEPLOYMENT_GUIDE.md](docs/PARTNER_DEPLOYMENT_GUIDE.md)** - Fast local evaluation and production readiness overview
-- **[MVP_IMPLEMENTATION_LOG.md](docs/MVP_IMPLEMENTATION_LOG.md)** - Detailed changelog of implementations
-- **[Architecture Center readiness](docs/ARCHITECTURE_CENTER_READINESS.md)** - Requirement-by-requirement status and submission gates
-- **[Architecture Center proposal](docs/architecture-center-proposal.md)** - English proposal for a Solution Idea contribution
-- **[Architecture Center Solution Idea draft](docs/architecture-center-solution-idea.md)** - Editorial draft with workflow, trade-offs, Well-Architected, and Responsible AI guidance
 
 ---
 
@@ -379,7 +375,7 @@ This repository is designed to be:
 4. **Well-Tested**: Test cases included for matching service, economics engine, and critical workflows
 
 ### To Add Features
-1. Review `docs/Roadmap (Not yet implemented)` for priorities
+1. Review the [Roadmap](#-roadmap---not-yet-implemented) for priorities
 2. Create branch: `git checkout -b feature/feature-name`
 3. Implement in backend (`api/app/`) and frontend (`frontend/src/`) as needed
 4. Validate with test cases
