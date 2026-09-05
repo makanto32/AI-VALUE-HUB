@@ -20,6 +20,8 @@ ALLOWED_CONTEXT_EXTENSIONS = {".pdf", ".ppt", ".pptx", ".doc", ".docx", ".md"}
 STORAGE_CONNECTION_STRING = os.getenv("AIHUB_STORAGE_CONNECTION_STRING", "")
 STORAGE_CONTAINER_NAME = os.getenv("AIHUB_STORAGE_CONTAINER", "documents")
 STORAGE_ACCOUNT_NAME = os.getenv("AIHUB_STORAGE_ACCOUNT_NAME", "")
+MANAGED_IDENTITY_CLIENT_ID = os.getenv("AZURE_CLIENT_ID", "")
+REQUIRE_CLOUD_STORAGE = os.getenv("AIHUB_REQUIRE_CLOUD_STORAGE", "false").lower() == "true"
 LOCAL_BLOB_ROOT = Path(
     os.getenv("AIHUB_LOCAL_BLOB_ROOT", str(Path(__file__).resolve().parents[2] / "data" / "blob"))
 )
@@ -39,7 +41,7 @@ def _build_blob_service_client() -> BlobServiceClient | None:
     if STORAGE_ACCOUNT_NAME:
         return BlobServiceClient(
             account_url=f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
-            credential=ManagedIdentityCredential(),
+            credential=ManagedIdentityCredential(client_id=MANAGED_IDENTITY_CLIENT_ID or None),
         )
     if STORAGE_CONNECTION_STRING:
         return BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
@@ -64,6 +66,10 @@ def upload_context_file(tenant_id: str, upload: UploadFile) -> BlobUploadResult:
     filename, content_type = _validate_context_file(upload)
     blob_service_client = _build_blob_service_client()
 
+    if REQUIRE_CLOUD_STORAGE and blob_service_client is None:
+        upload.file.close()
+        raise HTTPException(status_code=503, detail="Azure Blob Storage is required but not configured")
+
     try:
         if blob_service_client is not None:
             try:
@@ -81,7 +87,9 @@ def upload_context_file(tenant_id: str, upload: UploadFile) -> BlobUploadResult:
                     blob_path=blob_path,
                     blob_url=blob_url,
                 )
-            except Exception:
+            except Exception as error:
+                if REQUIRE_CLOUD_STORAGE:
+                    raise HTTPException(status_code=503, detail="Azure Blob Storage upload failed") from error
                 # Dev/validation resilience: if Azure Blob auth/config fails, keep operation available locally.
                 upload.file.seek(0)
 

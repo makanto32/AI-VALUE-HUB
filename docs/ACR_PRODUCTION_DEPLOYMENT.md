@@ -1,80 +1,94 @@
-# ACR and Client Production Deployment Guide
+# Partner Deployment Guide: Local to Azure Production
 
-This runbook guides a delivery partner from an approved AI Value Hub revision to a controlled client deployment on Azure. It separates mandatory production work from a second delivery of advanced security, resilience, and operations.
+This guide takes a delivery partner from local customization to an Azure production baseline. Commands use repository-relative paths only; there are no workstation-specific paths.
 
-> **Production blocker:** the repository is suitable for demo/evaluation but is not production-ready as-is. Entra ID token validation and a PostgreSQL persistence implementation must be completed and tested before client users or data are onboarded. `AIHUB_AUTH_PROVIDER=entra` currently returns `501`; enabling the Bicep PostgreSQL resource does not migrate the SQLite repository.
+## Choose a deployment route
 
-## Target architecture
+| Route | Use it when | Result |
+|---|---|---|
+| Local guided validation | The partner needs to customize and test the application first | API and frontend run locally; SQLite is used only for development |
+| Deploy to Azure button | The client foundation should be created through Azure Portal | Azure resources, including private PostgreSQL and ACR, are provisioned; no application image is published |
+| Azure CLI resource deployment | The client requires a scripted and repeatable foundation deployment | Same foundation as the button, deployed from PowerShell |
+| Complete deployment script | The approved code and identity implementation are ready | Foundation, immutable images, API Container App, and frontend Container App are deployed |
+
+> [!IMPORTANT]
+> Azure production workloads use `AIHUB_DATABASE_URL` with Azure Database for PostgreSQL. Local evaluation data is not migrated automatically.
+
+> [!WARNING]
+> The Azure resources and PostgreSQL adapter are deployable, but client go-live remains blocked until Microsoft Entra ID token validation is implemented and the mandatory controls in this guide pass. `AIHUB_AUTH_PROVIDER=entra` is not currently a working production authentication provider.
+
+## Architecture deployed
 
 ```text
-Users -> HTTPS frontend Container App (nginx:80)
-      -> HTTPS API Container App (FastAPI:8000)
-         |-- Microsoft Entra ID
-         |-- PostgreSQL Flexible Server
-         |-- Azure Blob Storage
-         |-- Key Vault
-         `-- Application Insights / Log Analytics
+Users
+  |
+  | HTTPS
+  v
+Frontend Container App
+  |
+  | HTTPS API calls
+  v
+API Container App
+  |-- Azure Database for PostgreSQL Flexible Server (private access)
+  |-- Azure Blob Storage (managed identity; local fallback disabled)
+  |-- Azure Key Vault (PostgreSQL connection secret)
+  `-- Application Insights and Log Analytics
 
-Both Container Apps pull signed, immutable images from ACR using managed identity.
+Both Container Apps pull immutable images from Azure Container Registry by managed identity.
 ```
 
-The frontend API URL is embedded during the Vite build. Approve the production API hostname before building the frontend image.
+## Resources provisioned automatically
 
-## Resource inventory
+The production foundation creates:
 
-### Created by `infra/main.bicep`
+- Azure Container Registry with administrator access disabled.
+- Virtual network and delegated subnets for Container Apps and PostgreSQL.
+- Private DNS zone and VNet link for PostgreSQL.
+- Azure Database for PostgreSQL Flexible Server 16 with public network access disabled.
+- PostgreSQL database named `aihub`.
+- Key Vault and a versioned database connection secret.
+- Storage account with private `documents` and `artifacts` containers.
+- User-assigned managed identity.
+- Container Apps Environment connected to the virtual network.
+- Log Analytics Workspace and workspace-based Application Insights.
 
-| Resource | Current template | Production decision |
-|---|---|---|
-| Log Analytics Workspace | Created, 30-day retention | Set client retention policy |
-| Application Insights | Workspace-based | Add instrumentation, alerts, dashboards |
-| Storage Account | Standard LRS, TLS 1.2 | Select redundancy and network isolation |
-| Blob containers | `documents`, `artifacts`; private | Add lifecycle, retention, backup, malware scanning |
-| ACR | Optional Standard; admin disabled | Use Premium for private endpoint/geo-replication |
-| User Assigned Managed Identity | Created | Assign minimum data-plane roles |
-| Key Vault | RBAC, 90-day soft delete | Add purge protection and network controls |
-| Container Apps Environment | Consumption profile | Configure approved network/zone design |
-| PostgreSQL Flexible Server | Optional; disabled | Enable only after application migration |
+The workload deployment additionally creates:
 
-The deployment script also creates or updates the resource group.
+- API Container App with PostgreSQL, Blob Storage, telemetry, probes, and HTTPS ingress.
+- Frontend Container App with probes and HTTPS ingress.
+- `AcrPull`, `Storage Blob Data Contributor`, and `Key Vault Secrets User` assignments.
 
-### Added by the client platform pipeline
+Custom domains, certificates, Entra app registrations, API Management/WAF, alert rules, budgets, and Defender plans are client-specific and are not created automatically.
 
-The current foundation does **not** create:
+## Route 1: customize and validate locally
 
-- API and frontend Container Apps.
-- Ingress, custom domains, TLS certificates, probes, scaling, or revision policy.
-- DNS records and certificate automation.
-- Entra app registrations, application roles, and assignments.
-- PostgreSQL database/schema, migrations, or application database identity.
-- RBAC assignments for ACR, Blob, Key Vault, and PostgreSQL.
-- Alerts, action groups, dashboards, budgets, or Defender plans.
-- Private endpoints/DNS, VNet integration, APIM, or WAF.
+Use [PARTNER_DEPLOYMENT_GUIDE.md](PARTNER_DEPLOYMENT_GUIDE.md) to customize branding, validation rules, role mapping, languages, and client-specific behavior before creating a release commit. That evaluation environment is separate from the Azure production resources described below.
 
-Add these resources to approved client IaC. Portal-only production changes must not become the system of record.
+## Route 2: auto-deploy Azure resources
 
-## Delivery 1: mandatory production launch controls
+This route creates the production foundation but does not build or publish application images.
 
-Every control is required before go-live unless the client's security authority records a time-bound exception and compensating control.
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmakanto32%2FAI-VALUE-HUB%2Fmain%2Finfra%2Fazuredeploy.json)
 
-1. **Identity and authorization:** validate Entra JWT signature, issuer, audience, tenant, lifetime, scopes, and app roles. Map business, technical, and administrator roles. Enforce tenant/object authorization in the API. Remove demo identities and sessions.
-2. **Persistence:** replace SQLite/`AIHUB_DB_PATH` with a PostgreSQL repository. Add migrations, pooling, transient-failure handling, encryption, HA, backup, restore, and rollback tests.
-3. **File storage:** use Blob through managed identity; disable local/connection-string fallback. Add type, size, content, malware, retention, and deletion controls.
-4. **Network and edge:** use approved HTTPS domains and exact CORS origins. Define ingress, egress, DNS, and administration. Add APIM/WAF/private networking when required by policy or threat model.
-5. **Secrets:** use managed identity or Key Vault references. Define rotation, expiry alerts, revocation, and break-glass procedures.
-6. **Reliability:** configure probes, CPU/memory, replica bounds, autoscaling, graceful shutdown, immutable revisions, and rollback.
-7. **Observability/audit:** instrument telemetry without sensitive payloads. Alert on availability, errors, latency, identity failures, dependencies, capacity, and expiry. Audit actor, tenant, action, target, result, and correlation ID.
-8. **Supply chain:** protect branches, review releases, pin dependencies/base images, generate SBOMs, scan code/images/IaC, sign digests, and promote the same approved digest.
-9. **Governance:** complete threat model, data classification, privacy/compliance, tenant isolation, retention/deletion, and Responsible AI assessments.
-10. **Acceptance:** pass functional, authorization, isolation, security, performance, restore, failover, and rollback tests; obtain application, platform, security, compliance, and operations approval.
+1. Sign in to the client Azure tenant before selecting the button.
+2. Select the approved subscription, resource group, and region.
+3. Use a short lowercase application name, such as `aivaluehub`.
+4. Keep the environment as `prod` unless the client naming standard requires another value.
+5. Enter a unique PostgreSQL administrator login and a generated password from the client password vault.
+6. Review the template and create the deployment.
+7. Save the deployment name and outputs as release evidence.
 
-## Prerequisites
+The password is a secure deployment parameter and is stored in Key Vault as part of the PostgreSQL connection secret. Before go-live, replace administrator use with a least-privilege application database role and rotate the bootstrap credential.
 
-- Azure CLI authenticated to the client tenant/subscription.
-- Contributor on the deployment resource group.
-- ACR build/push and role-assignment permissions.
-- Approved region, names, domains, certificates, API/frontend URLs, RPO, and RTO.
-- A clean, reviewed, tested release commit.
+## Route 3: deploy the same resources with Azure CLI
+
+### Prerequisites
+
+- PowerShell 7
+- Azure CLI with Bicep support
+- Permission to create the resource group resources and role assignments
+
+Authenticate and select the client context:
 
 ```powershell
 az login --tenant <tenant-id>
@@ -82,169 +96,135 @@ az account set --subscription <subscription-id>
 az account show --output table
 ```
 
-## 1. Prepare production parameters
-
-The checked-in parameters enable ACR, disable PostgreSQL, and use `environmentName=dev`. Do not reuse them unchanged. Approve subscription, tenant, region, names, environment, tags/cost center, ACR SKU, storage redundancy, log retention, database tier/HA/backup, URLs, RPO, and RTO. Keep sensitive values outside source control.
-
-## 2. Deploy the Azure foundation
-
-Review `infra/main.bicep` and the production parameter file, then run from the repository root:
+Create a secure password in memory and run the resource deployment from the repository root:
 
 ```powershell
-.\infra\deploy-foundation.ps1 `
-  -ResourceGroupName "rg-ai-value-hub-prod" `
-  -Location "eastus" `
-  -TemplateFile ".\infra\main.bicep" `
-  -ParametersFile ".\infra\main.parameters.json"
+$postgresPassword = Read-Host "PostgreSQL bootstrap password" -AsSecureString
+
+./infra/deploy-azure-resources.ps1 `
+  -SubscriptionId "<subscription-id>" `
+  -ResourceGroupName "<resource-group>" `
+  -Location "<azure-region>" `
+  -AppName "aivaluehub" `
+  -EnvironmentName "prod" `
+  -PostgresAdminLogin "<bootstrap-admin>" `
+  -PostgresAdminPassword $postgresPassword
 ```
 
-Capture and protect the ACR login server, identity IDs, Key Vault name, Storage name, Container Apps Environment ID, and Application Insights connection string.
+No secret should be written into a parameters file, shell history, source control, or deployment log.
 
-## 3. Publish immutable OCI images
+## Publish immutable images after the resources exist
+
+The frontend API URL is compiled into the Vite bundle. Decide the final API hostname before building the frontend image.
+
+The ACR build runs in Azure; Docker is not required on the operator workstation:
 
 ```powershell
-.\infra\push-to-acr.ps1 `
-  -ResourceGroupName "rg-ai-value-hub-prod" `
-  -AcrName "<acr-name>" `
-  -ApiBaseUrl "https://api.valuehub.contoso.com" `
-  -ImageTag "1.0.0"
+./infra/push-to-acr.ps1 `
+  -ResourceGroupName "<resource-group>" `
+  -AcrName "<acr-name-from-deployment-output>" `
+  -ApiBaseUrl "https://<approved-api-hostname>" `
+  -ImageTag "<release-version-or-git-sha>"
 ```
+
+The command publishes:
 
 ```text
-<acr>.azurecr.io/ai-value-hub/api:<tag>
-<acr>.azurecr.io/ai-value-hub/frontend:<tag>
+<acr-login-server>/ai-value-hub/api:<immutable-tag>
+<acr-login-server>/ai-value-hub/frontend:<immutable-tag>
 ```
 
-The script rejects `latest`. Retain digests, scans, SBOMs, signatures, source commit, and pipeline run. Promote approved digests instead of rebuilding.
+Never use `latest`. Generate an SBOM, scan both images, sign their digests, and promote the approved digests without rebuilding them.
 
-## 4. Assign least privilege
+## Integrate the images with Azure resources
+
+The complete script can provision resources, build images in ACR, and deploy both Container Apps:
 
 ```powershell
-$acrId = az acr show --name "<acr-name>" --query id --output tsv
-$principalId = az identity show `
-  --resource-group "rg-ai-value-hub-prod" `
-  --name "<managed-identity-name>" `
-  --query principalId --output tsv
-az role assignment create `
-  --assignee-object-id $principalId `
-  --assignee-principal-type ServicePrincipal `
-  --role AcrPull `
-  --scope $acrId
+$postgresPassword = Read-Host "PostgreSQL bootstrap password" -AsSecureString
+
+./infra/deploy-production.ps1 `
+  -SubscriptionId "<subscription-id>" `
+  -ResourceGroupName "<resource-group>" `
+  -Location "<azure-region>" `
+  -AppName "aivaluehub" `
+  -EnvironmentName "prod" `
+  -PostgresAdminLogin "<bootstrap-admin>" `
+  -PostgresAdminPassword $postgresPassword `
+  -ImageTag "<release-version-or-git-sha>" `
+  -AuthProvider "demo"
 ```
 
-Assign only required Blob, Key Vault, and database permissions at narrow scope in IaC. Keep ACR admin disabled.
+`demo` is permitted only for infrastructure validation with synthetic data. Do not onboard client users or data. Change to `entra` only after the API implements and tests Entra JWT validation.
 
-## 5. Create and configure workloads
+For a client pipeline that already published images, deploy `infra/workloads.bicep` with the immutable API/frontend image references and the outputs from the foundation deployment. Keep Bicep or Terraform as the system of record; do not make undocumented Portal-only production changes.
 
-| Setting | API | Frontend |
-|---|---|---|
-| Image | Approved API digest | Digest built with production API URL |
-| Port | `8000` | `80` |
-| Ingress | Approved API design | External HTTPS |
-| Probe | `/health` | `/` |
-| Registry | Managed identity | Managed identity |
-| Revision mode | Multiple for controlled rollback | Client policy |
-| Scale | Tested min/max and HTTP/concurrency | Tested min/max and HTTP/concurrency |
-
-Do not use `AIHUB_AUTH_PROVIDER=demo`, `AIHUB_DB_PATH`, or `AIHUB_LOCAL_BLOB_ROOT` in production. Use configuration introduced by the completed Entra/PostgreSQL adapters. Current supported storage/CORS values include:
+The API Container App receives:
 
 ```text
-AIHUB_STORAGE_ACCOUNT_NAME=<storage-account>
+AIHUB_DATABASE_URL=<Key Vault secret reference to private PostgreSQL>
+AIHUB_AUTO_SEED_CONTEXT=false
+AIHUB_ENABLE_DEMO_SEED=false
+AIHUB_STORAGE_ACCOUNT_NAME=<storage account>
 AIHUB_STORAGE_CONTAINER=documents
-AIHUB_ALLOWED_ORIGINS=https://valuehub.contoso.com
-APPLICATIONINSIGHTS_CONNECTION_STRING=<Key Vault reference or protected setting>
+AIHUB_REQUIRE_CLOUD_STORAGE=true
+AIHUB_ALLOWED_ORIGINS=<exact HTTPS frontend origin>
+APPLICATIONINSIGHTS_CONNECTION_STRING=<foundation output>
 ```
 
-Disable automatic demo seeding. Keep secrets out of source, images, parameter files, pipeline output, and plain settings.
+Do not add filesystem database or local Blob settings to the production Container App.
 
-## 6. Configure identity, DNS, TLS, and edge
+## Validate before go-live
 
-Register frontend/API in Entra, define roles and assignment ownership, bind client domains, validate certificate renewal, enforce HTTPS/exact CORS, and confirm browsers reach the embedded API URL. Apply APIM, WAF, private connectivity, and request/rate limits required by the approved design.
+The resource deployment is complete only when all relevant checks pass:
 
-## 7. Deploy an approved release
+1. PostgreSQL public access is disabled; Key Vault, Storage, and ACR network access matches the client-approved baseline.
+2. API `/health` and frontend `/` probes are healthy after restart and revision replacement.
+3. The API starts with `AIHUB_DATABASE_URL`; no SQLite file or local Blob fallback is used.
+4. Confirm the new PostgreSQL database contains no ideas, company context, demo sessions, or sample records. Production sets `AIHUB_AUTO_SEED_CONTEXT=false` and `AIHUB_ENABLE_DEMO_SEED=false`; the demo sample endpoints return `404`.
+5. Create, update, retrieve, and delete a synthetic idea; verify persistence after API replica restart.
+6. Upload a synthetic context document and verify it exists in the `documents` container.
+7. Confirm business users cannot access another user or tenant's records.
+8. Confirm ACR administrator access is disabled and Container Apps pull by managed identity.
+9. Verify logs contain correlation data but no credentials, tokens, document content, or sensitive prompts.
+10. Test backup restore, revision rollback, and database migration rollback in a non-production environment.
+11. Record image digests, infrastructure deployment, tests, exceptions, and client approvals.
 
-```powershell
-$loginServer = az acr show --name "<acr-name>" --query loginServer --output tsv
-.\infra\update-container-apps.ps1 `
-  -ResourceGroupName "rg-ai-value-hub-prod" `
-  -ApiContainerAppName "ai-value-hub-prod-api" `
-  -ApiImage "$loginServer/ai-value-hub/api:1.0.0" `
-  -FrontendContainerAppName "ai-value-hub-prod-frontend" `
-  -FrontendImage "$loginServer/ai-value-hub/frontend:1.0.0" `
-  -RevisionSuffix "v100"
-```
+## Mandatory application work before client production
 
-Deploy first to production-like staging, then promote the same approved digests.
+Infrastructure automation does not remove these application gates:
 
-## 8. Validate before traffic
+- Implement Entra access-token validation for signature, issuer, audience, tenant, lifetime, scopes, and app roles.
+- Remove demo credentials, local auth sessions, and demo seed behavior.
+- Replace automatic schema creation with reviewed, versioned PostgreSQL migrations and a migration job.
+- Add PostgreSQL connection pooling, transient-failure handling, least-privilege database roles, and tested backup/restore.
+- Complete tenant-isolation, authorization, privacy, threat-model, and Responsible AI testing.
 
-- API `/health` and frontend `/` through intended routes.
-- Entra login, expiry, invalid issuer/audience, disabled users, role changes.
-- Business/reviewer/admin, owner, and tenant API authorization.
-- Full workflow and file handling across restart and scale-out.
-- Migrations, backup/restore, Blob retention/deletion, dependency failure.
-- HTTPS, CORS, DNS, certificates, ingress/egress, edge policies.
-- Telemetry redaction/correlation, alerts, dashboards, load, scaling, rollback.
-- Residual risks have owner, control, and expiry date.
+Until these are complete, the deployment is an Azure production-like validation environment, not an approved client production service.
 
-## 9. Release and rollback
+## Delivery 2: security and operational hardening
 
-Record revisions, traffic weights, migration/configuration versions, and image digests. Use canary or blue/green progression when required. Roll back traffic to the previous healthy revision or signed digest. Database changes need forward compatibility or a separately tested rollback; reverting only the image can be unsafe.
+Plan these items as a second delivery unless client policy requires them before initial go-live:
 
-## Current implementation gaps
-
-| Area | Current state | Production control |
-|---|---|---|
-| Authentication | Demo; Entra returns `501` | Token validation and role mapping |
-| Authorization | Demo identity roles | Least privilege and tenant isolation |
-| Database | SQLite | PostgreSQL adapter, migrations, pooling, HA, restore |
-| Storage | Local fallback exists | Managed identity, private Blob, content controls |
-| Secrets | Key Vault foundation | References, identity, rotation |
-| Network | Public reference | Approved private/egress/edge design |
-| ACR | Public by default | Firewall/private access, scans, signing |
-| API | Direct FastAPI | Throttling, quotas, payload/schema limits |
-| Observability | Platform resources | Instrumentation, redaction, alerts, SLOs |
-| Audit/privacy | Incomplete trail | Events, retention, classification, data rights |
-| Supply chain | Versioned images | Pins, SBOM, scans, signatures, policy |
-| Responsible AI | Human review | Assessment, evaluation, monitoring, escalation |
-
-## Delivery 2: security and platform backlog
-
-A threat model, regulation, classification, or availability requirement can move any item into Delivery 1.
-
-| Workstream | Candidate capabilities | Exit evidence |
-|---|---|---|
-| Network isolation | VNet environment, private endpoints/DNS, controlled egress | Diagram and exfiltration tests |
-| API edge | APIM, WAF, quotas, schema/payload/bot controls | Policy tests and alerts |
-| Advanced identity | Conditional Access, PIM/JIT, access reviews, federation | Access certification |
-| Resilience/DR | Zones, PostgreSQL HA, geo-backup, second region | RTO/RPO exercise |
-| Security operations | Defender, Sentinel, detections/playbooks, audit archive | Incident simulation |
-| Supply chain | Private agents, provenance, signed-image admission | Policy denial tests |
-| Data governance | Purview, DLP, CMK if required, legal hold, data requests | Lifecycle tests |
-| Responsible AI | Quality/safety and outcome monitoring, appeal/review | Approved metrics/reports |
-| Performance/cost | Load tuning, capacity, budgets, anomaly alerts | Capacity/cost baseline |
-| Operations | SLO/error budgets, synthetic/chaos tests, patch cadence | Operational acceptance |
-| Analytics | Fabric/Power BI identity, private paths, RLS, lineage | Access/refresh tests |
-
-## Production acceptance checklist
-
-- [ ] Entra token and server-side role/tenant authorization tested.
-- [ ] Demo credentials/authentication/seeding disabled.
-- [ ] PostgreSQL adapter/migrations and restore proven.
-- [ ] Blob uses managed identity and approved content controls.
-- [ ] HTTPS, CORS, DNS, certificates, and edge controls validated.
-- [ ] Secrets and rotation ownership approved.
-- [ ] Probes, scaling, revisions, and graceful failure tested.
-- [ ] Telemetry, audit, alerts, dashboards, on-call operational.
-- [ ] Images immutable, scanned, signed, and approved by digest.
-- [ ] Security, privacy, governance, and Responsible AI approved.
-- [ ] Performance, restore, DR, and rollback evidence retained.
-- [ ] Runbooks, ownership, SLOs, risks, and exceptions approved.
+| Area | Follow-up work |
+|---|---|
+| Network edge | Custom domains, certificate automation, WAF or Front Door, APIM throttling/quotas, controlled egress |
+| Private access | Private endpoints and private DNS for ACR, Storage, and Key Vault; approved administrative access. Move this to Delivery 1 when client policy prohibits public service endpoints. |
+| Database resilience | Zone-redundant HA, geo-redundant backup/replica, DR targets and exercises |
+| Supply chain | Dependency and image policies, SBOM retention, signing enforcement, admission policy |
+| Monitoring | Alert rules, action groups, SLO dashboards, synthetic availability tests, log retention |
+| Data protection | Blob lifecycle, backup, malware/content scanning, retention and deletion automation |
+| Governance | Azure Policy, Defender for Cloud, budgets, cost alerts, resource locks, naming/tag enforcement |
+| Operations | On-call ownership, incident response, credential rotation, break-glass and disaster runbooks |
 
 ## Release evidence
 
-Retain source/PR approvals, IaC deployment records, approved parameters, image digests/signatures/SBOM/scans, migration and restore evidence, test results, active revisions/traffic/configuration, change record, and client application/platform/security/compliance/Responsible AI/operations approvals.
+Retain for every release:
 
-## Scope and ownership
-
-The repository supplies a reference application, Dockerfiles, publication/update scripts, and a partial Azure foundation. The partner owns client production architecture, IaC completion, application remediation, testing, migration, operations, and evidence. The client owns risk acceptance, policy, governance, compliance, availability objectives, and go-live approval.
+- Approved source commit and pull request.
+- Bicep validation and deployment records.
+- API and frontend image digests and signatures.
+- SBOM and vulnerability scan results.
+- Functional, security, isolation, load, restore, and rollback results.
+- Database migration version and rollback procedure.
+- Client security, privacy, compliance, operations, and Responsible AI approvals.

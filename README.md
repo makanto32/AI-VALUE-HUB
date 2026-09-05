@@ -11,6 +11,19 @@ Reference implementation and deployment kit for governing and prioritizing enter
 This repository is licensed under MIT.
 See full terms in [LICENSE](LICENSE).
 
+## Deploy
+
+Choose the route that matches the current stage:
+
+| Route | Purpose | Start here |
+|---|---|---|
+| Local guided setup | Customize and validate the application before Azure deployment. Uses SQLite only for local development. | [Partner deployment guide](docs/PARTNER_DEPLOYMENT_GUIDE.md) |
+| Azure resource auto-deploy | Create the production foundation, including private Azure Database for PostgreSQL, ACR, Container Apps Environment, Storage, Key Vault, managed identity, and monitoring. It does not publish application images. | [Production deployment guide](docs/ACR_PRODUCTION_DEPLOYMENT.md) |
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmakanto32%2FAI-VALUE-HUB%2Fmain%2Finfra%2Fazuredeploy.json)
+
+The Azure deployment uses PostgreSQL. SQLite is not configured in the production workload. Review the mandatory go-live gates in the production guide before onboarding client users or data.
+
 ## ⭐ Star Here - Quick Start
 
 **AI Value Hub** is an AI initiative management and validation reference platform for enterprises. It implements a three-stage workflow with context-aware business validation, deterministic technical assessment, human technical approval, economic gating before funding, and duplicate detection.

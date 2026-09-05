@@ -86,6 +86,7 @@ LOCAL_DASHBOARD_METRICS_PROVIDER = LocalDashboardMetricsProvider()
 CANONICAL_LANGUAGE = "es"
 SUPPORTED_LANGUAGES = ["es", "en", "pt"]
 AUTO_SEED_CONTEXT = os.getenv("AIHUB_AUTO_SEED_CONTEXT", "true").lower() in {"1", "true", "yes"}
+ENABLE_DEMO_SEED = os.getenv("AIHUB_ENABLE_DEMO_SEED", "true").lower() in {"1", "true", "yes"}
 AUTH_PROVIDER = os.getenv("AIHUB_AUTH_PROVIDER", "demo").lower()
 ALLOWED_ORIGINS = [
     origin.strip()
@@ -2722,12 +2723,16 @@ def list_ideas(
 
 @app.get("/ideas/demo-samples", response_model=list[IdeaCase])
 def list_demo_sample_ideas(current_user: UserProfile = Depends(get_current_user)) -> list[IdeaCase]:
+    if not ENABLE_DEMO_SEED:
+        raise HTTPException(status_code=404, detail="Demo sample ideas are disabled")
     valid_ids = _demo_sample_ids_for_tenant(current_user.tenant_id)
     return [idea for idea in idea_store.list_by_tenant(current_user.tenant_id) if idea.idea_id in valid_ids]
 
 
 @app.post("/ideas/demo-samples/seed", response_model=list[IdeaCase])
 def seed_demo_sample_ideas(current_user: UserProfile = Depends(get_current_user)) -> list[IdeaCase]:
+    if not ENABLE_DEMO_SEED:
+        raise HTTPException(status_code=404, detail="Demo sample ideas are disabled")
     seeded: list[IdeaCase] = []
     for defn in DEMO_SAMPLE_IDEA_DEFS:
         idea = _build_demo_sample_idea(defn, current_user)
@@ -2740,6 +2745,8 @@ def delete_demo_sample_idea(
     idea_id: str,
     current_user: UserProfile = Depends(get_current_user),
 ) -> MessageResponse:
+    if not ENABLE_DEMO_SEED:
+        raise HTTPException(status_code=404, detail="Demo sample ideas are disabled")
     valid_ids = _demo_sample_ids_for_tenant(current_user.tenant_id)
     if idea_id not in valid_ids:
         raise HTTPException(status_code=400, detail="El identificador no corresponde a una idea de demostracion valida")

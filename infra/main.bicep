@@ -29,6 +29,18 @@ param postgresAdminLogin string = 'aihubadmin'
 @description('Administrator password for PostgreSQL when enabled.')
 param postgresAdminPassword string = ''
 
+@description('Database created for the AI Value Hub application.')
+param postgresDatabaseName string = 'aihub'
+
+@description('Address space used by the production virtual network.')
+param virtualNetworkAddressPrefix string = '10.42.0.0/16'
+
+@description('Subnet delegated to the Container Apps Environment. A /23 is recommended for Consumption workloads.')
+param containerAppsSubnetPrefix string = '10.42.0.0/23'
+
+@description('Subnet delegated to PostgreSQL Flexible Server.')
+param postgresSubnetPrefix string = '10.42.2.0/28'
+
 var effectivePostgresPassword = enablePostgres ? postgresAdminPassword : 'DisabledPostgres123!'
 
 var normalizedApp = toLower(replace(appName, '-', ''))
@@ -42,6 +54,74 @@ var keyVaultName = take(replace('${appName}-${environmentName}-kv-${uniqueString
 var managedIdentityName = '${appName}-${environmentName}-mi'
 var postgresServerName = take(replace('${appName}-${environmentName}-psql-${uniqueString(resourceGroup().id)}', '-', ''), 63)
 var blobServiceName = 'default'
+var virtualNetworkName = '${appName}-${environmentName}-vnet'
+var containerAppsSubnetName = 'snet-container-apps'
+var postgresSubnetName = 'snet-postgresql'
+var postgresPrivateDnsZoneName = 'privatelink.postgres.database.azure.com'
+
+resource virtualNetwork 'Microsoft.Network/virtualNetworks@2024-01-01' = if (enablePostgres) {
+  name: virtualNetworkName
+  location: location
+  tags: tags
+  properties: {
+    addressSpace: {
+      addressPrefixes: [
+        virtualNetworkAddressPrefix
+      ]
+    }
+  }
+}
+
+resource containerAppsSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = if (enablePostgres) {
+  parent: virtualNetwork
+  name: containerAppsSubnetName
+  properties: {
+    addressPrefix: containerAppsSubnetPrefix
+    delegations: [
+      {
+        name: 'Microsoft.App.environments'
+        properties: {
+          serviceName: 'Microsoft.App/environments'
+        }
+      }
+    ]
+  }
+}
+
+resource postgresSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-01-01' = if (enablePostgres) {
+  parent: virtualNetwork
+  name: postgresSubnetName
+  properties: {
+    addressPrefix: postgresSubnetPrefix
+    delegations: [
+      {
+        name: 'Microsoft.DBforPostgreSQL.flexibleServers'
+        properties: {
+          serviceName: 'Microsoft.DBforPostgreSQL/flexibleServers'
+        }
+      }
+    ]
+  }
+}
+
+resource postgresPrivateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = if (enablePostgres) {
+  name: postgresPrivateDnsZoneName
+  location: 'global'
+  tags: tags
+}
+
+resource postgresPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = if (enablePostgres) {
+  parent: postgresPrivateDnsZone
+  name: '${virtualNetworkName}-link'
+  location: 'global'
+  tags: tags
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: virtualNetwork.id
+    }
+  }
+}
 
 resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsName
@@ -173,6 +253,10 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
         name: 'Consumption'
       }
     ]
+    vnetConfiguration: enablePostgres ? {
+      infrastructureSubnetId: containerAppsSubnet.id
+      internal: false
+    } : null
   }
 }
 
@@ -202,7 +286,9 @@ resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview'
       mode: 'Disabled'
     }
     network: {
-      publicNetworkAccess: 'Enabled'
+      delegatedSubnetResourceId: postgresSubnet.id
+      privateDnsZoneArmResourceId: postgresPrivateDnsZone.id
+      publicNetworkAccess: 'Disabled'
     }
     storage: {
       storageSizeGB: 32
@@ -210,11 +296,33 @@ resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview'
     }
     version: '16'
   }
+  dependsOn: [
+    postgresPrivateDnsLink
+  ]
+}
+
+resource postgresDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2023-06-01-preview' = if (enablePostgres) {
+  parent: postgres
+  name: postgresDatabaseName
+  properties: {
+    charset: 'UTF8'
+    collation: 'en_US.utf8'
+  }
+}
+
+resource postgresConnectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (enablePostgres) {
+  parent: keyVault
+  name: 'aihub-database-url'
+  properties: {
+    value: 'postgresql://${uriComponent(postgresAdminLogin)}:${uriComponent(postgresAdminPassword)}@${postgres!.properties.fullyQualifiedDomainName}:5432/${postgresDatabase!.name}?sslmode=require'
+  }
 }
 
 output containerAppsEnvironmentId string = containerAppsEnvironment.id
 output containerAppsEnvironmentName string = containerAppsEnvironment.name
+output containerAppsEnvironmentDefaultDomain string = containerAppsEnvironment.properties.defaultDomain
 output acrLoginServer string = enableAcr ? registry!.properties.loginServer : ''
+output acrName string = enableAcr ? registry!.name : ''
 output acrResourceId string = enableAcr ? registry!.id : ''
 output storageAccountName string = storage.name
 output storageBlobEndpoint string = storage.properties.primaryEndpoints.blob
@@ -223,6 +331,10 @@ output keyVaultUri string = keyVault.properties.vaultUri
 output applicationInsightsConnectionString string = appInsights.properties.ConnectionString
 output userAssignedIdentityId string = identity.id
 output userAssignedIdentityClientId string = identity.properties.clientId
+output userAssignedIdentityPrincipalId string = identity.properties.principalId
 output postgresServerName string = enablePostgres ? postgres!.name : ''
+output postgresFqdn string = enablePostgres ? postgres!.properties.fullyQualifiedDomainName : ''
+output postgresDatabaseName string = enablePostgres ? postgresDatabase!.name : ''
+output postgresConnectionSecretUrl string = enablePostgres ? postgresConnectionSecret!.properties.secretUriWithVersion : ''
 output documentsContainerName string = documentsContainer.name
 output artifactsContainerName string = artifactsContainer.name

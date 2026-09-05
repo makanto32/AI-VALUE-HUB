@@ -9,12 +9,17 @@ from pathlib import Path
 from typing import Any, Dict, List
 from uuid import uuid4
 
+import psycopg
+from psycopg.rows import dict_row
+
 from .models import CompanyContext, IdeaCase
 
 
 DEFAULT_DB_PATH = Path(
     os.getenv("AIHUB_DB_PATH", str(Path(__file__).resolve().parents[2] / "data" / "aihub.db"))
 )
+DATABASE_URL = os.getenv("AIHUB_DATABASE_URL", "").strip()
+USING_POSTGRES = DATABASE_URL.startswith(("postgresql://", "postgres://"))
 
 
 def _now_iso() -> str:
@@ -25,11 +30,19 @@ def _ensure_parent_directory(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
 
-def _connect() -> sqlite3.Connection:
+def _connect() -> sqlite3.Connection | psycopg.Connection:
+    if USING_POSTGRES:
+        return psycopg.connect(DATABASE_URL, row_factory=dict_row)
     _ensure_parent_directory(DEFAULT_DB_PATH)
     connection = sqlite3.connect(DEFAULT_DB_PATH, timeout=30)
     connection.row_factory = sqlite3.Row
     return connection
+
+
+def _execute(connection: sqlite3.Connection | psycopg.Connection, query: str, parameters: tuple = ()):
+    if USING_POSTGRES:
+        query = query.replace("?", "%s")
+    return connection.execute(query, parameters)
 
 
 def _to_json(model: Any) -> str:
@@ -54,7 +67,15 @@ def _from_json(payload: str | None) -> Any:
     return json.loads(payload)
 
 
-def _ensure_column(connection: sqlite3.Connection, table_name: str, column_name: str, definition: str) -> None:
+def _ensure_column(
+    connection: sqlite3.Connection | psycopg.Connection,
+    table_name: str,
+    column_name: str,
+    definition: str,
+) -> None:
+    if USING_POSTGRES:
+        connection.execute(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS {column_name} {definition}")
+        return
     columns = connection.execute(f"PRAGMA table_info({table_name})").fetchall()
     existing_names = {column[1] for column in columns}
     if column_name in existing_names:
@@ -64,9 +85,7 @@ def _ensure_column(connection: sqlite3.Connection, table_name: str, column_name:
 
 def _init_schema() -> None:
     with closing(_connect()) as connection, connection:
-        connection.executescript(
-            """
-            PRAGMA journal_mode=WAL;
+        schema = """
 
             CREATE TABLE IF NOT EXISTS company_contexts (
                 tenant_id TEXT PRIMARY KEY,
@@ -108,10 +127,10 @@ def _init_schema() -> None:
                 quota_adjustments TEXT NOT NULL DEFAULT '[]',
                 clarification_questions TEXT NOT NULL,
                 clarification_interactions TEXT NOT NULL,
-                agent_approved BOOLEAN NOT NULL DEFAULT 0,
+                agent_approved BOOLEAN NOT NULL DEFAULT FALSE,
                 agent_approval_summary TEXT,
                 agent_approval_date TEXT,
-                human_approved BOOLEAN NOT NULL DEFAULT 0,
+                human_approved BOOLEAN NOT NULL DEFAULT FALSE,
                 human_approval_date TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
@@ -137,7 +156,12 @@ def _init_schema() -> None:
                 created_at TEXT NOT NULL
             );
             """
-        )
+        if USING_POSTGRES:
+            for statement in schema.split(";"):
+                if statement.strip():
+                    connection.execute(statement)
+        else:
+            connection.executescript(f"PRAGMA journal_mode=WAL;{schema}")
 
         # Backward-compatible migration for databases created before MVP2 fields existed.
         _ensure_column(connection, "ideas", "technical_validation", "TEXT")
@@ -151,10 +175,10 @@ def _init_schema() -> None:
         _ensure_column(connection, "ideas", "quota_adjustments", "TEXT NOT NULL DEFAULT '[]'")
         _ensure_column(connection, "ideas", "technical_questions", "TEXT NOT NULL DEFAULT '[]'")
         _ensure_column(connection, "ideas", "technical_interactions", "TEXT NOT NULL DEFAULT '[]'")
-        _ensure_column(connection, "ideas", "agent_approved", "BOOLEAN NOT NULL DEFAULT 0")
+        _ensure_column(connection, "ideas", "agent_approved", "BOOLEAN NOT NULL DEFAULT FALSE")
         _ensure_column(connection, "ideas", "agent_approval_summary", "TEXT")
         _ensure_column(connection, "ideas", "agent_approval_date", "TEXT")
-        _ensure_column(connection, "ideas", "human_approved", "BOOLEAN NOT NULL DEFAULT 0")
+        _ensure_column(connection, "ideas", "human_approved", "BOOLEAN NOT NULL DEFAULT FALSE")
         _ensure_column(connection, "ideas", "human_approval_date", "TEXT")
 
 
@@ -169,7 +193,8 @@ class IdeaStore:
         idea.updated_at = datetime.utcnow()
 
         with closing(_connect()) as connection, connection:
-            connection.execute(
+            _execute(
+                connection,
                 """
                 INSERT INTO ideas (
                     idea_id, tenant_id, owner_user_id, owner_display_name, title, canonical_language,
@@ -256,10 +281,10 @@ class IdeaStore:
                     _to_json(idea.quota_adjustments),
                     _to_json(idea.clarification_questions),
                     _to_json(idea.clarification_interactions),
-                    1 if idea.agent_approved else 0,
+                    idea.agent_approved,
                     idea.agent_approval_summary,
                     idea.agent_approval_date.isoformat() if idea.agent_approval_date else None,
-                    1 if idea.human_approved else 0,
+                    idea.human_approved,
                     idea.human_approval_date.isoformat() if idea.human_approval_date else None,
                     idea.created_at.isoformat(),
                     idea.updated_at.isoformat(),
@@ -326,19 +351,20 @@ class IdeaStore:
 
     def get(self, idea_id: str) -> IdeaCase | None:
         with closing(_connect()) as connection, connection:
-            row = connection.execute("SELECT * FROM ideas WHERE idea_id = ?", (idea_id,)).fetchone()
+            row = _execute(connection, "SELECT * FROM ideas WHERE idea_id = ?", (idea_id,)).fetchone()
         if row is None:
             return None
         return self._row_to_idea(row)
 
     def list_all(self) -> List[IdeaCase]:
         with closing(_connect()) as connection, connection:
-            rows = connection.execute("SELECT * FROM ideas ORDER BY created_at DESC").fetchall()
+            rows = _execute(connection, "SELECT * FROM ideas ORDER BY created_at DESC").fetchall()
         return [self._row_to_idea(row) for row in rows]
 
     def list_by_owner(self, owner_user_id: str) -> List[IdeaCase]:
         with closing(_connect()) as connection, connection:
-            rows = connection.execute(
+            rows = _execute(
+                connection,
                 "SELECT * FROM ideas WHERE owner_user_id = ? ORDER BY created_at DESC",
                 (owner_user_id,),
             ).fetchall()
@@ -346,7 +372,8 @@ class IdeaStore:
 
     def list_by_tenant(self, tenant_id: str) -> List[IdeaCase]:
         with closing(_connect()) as connection, connection:
-            rows = connection.execute(
+            rows = _execute(
+                connection,
                 "SELECT * FROM ideas WHERE tenant_id = ? ORDER BY created_at DESC",
                 (tenant_id,),
             ).fetchall()
@@ -354,7 +381,7 @@ class IdeaStore:
 
     def delete(self, idea_id: str) -> None:
         with closing(_connect()) as connection, connection:
-            connection.execute("DELETE FROM ideas WHERE idea_id = ?", (idea_id,))
+            _execute(connection, "DELETE FROM ideas WHERE idea_id = ?", (idea_id,))
 
 
 idea_store = IdeaStore()
@@ -369,7 +396,8 @@ class CompanyContextStore:
 
         payload = _to_json(context)
         with closing(_connect()) as connection, connection:
-            connection.execute(
+            _execute(
+                connection,
                 """
                 INSERT INTO company_contexts (tenant_id, payload, created_at, updated_at)
                 VALUES (?, ?, ?, ?)
@@ -389,10 +417,10 @@ class CompanyContextStore:
 
     def get(self, tenant_id: str) -> CompanyContext | None:
         with closing(_connect()) as connection, connection:
-            row = connection.execute("SELECT payload FROM company_contexts WHERE tenant_id = ?", (tenant_id,)).fetchone()
+            row = _execute(connection, "SELECT payload FROM company_contexts WHERE tenant_id = ?", (tenant_id,)).fetchone()
         if row is None:
             return None
-        return CompanyContext.model_validate(_from_json(row[0]))
+        return CompanyContext.model_validate(_from_json(row["payload"]))
 
 
 company_context_store = CompanyContextStore()
@@ -411,7 +439,8 @@ class ContextFileStore:
         file_id = str(uuid4())
         created_at = _now_iso()
         with closing(_connect()) as connection, connection:
-            connection.execute(
+            _execute(
+                connection,
                 """
                 INSERT INTO context_files (
                     file_id, tenant_id, uploaded_by_user_id, filename, content_type, blob_path, blob_url, created_at
@@ -495,7 +524,8 @@ class AuthStore:
     def issue_token(self, user_id: str) -> str:
         token = str(uuid4())
         with closing(_connect()) as connection, connection:
-            connection.execute(
+            _execute(
+                connection,
                 "INSERT INTO auth_sessions (token, user_id, created_at) VALUES (?, ?, ?)",
                 (token, user_id, _now_iso()),
             )
@@ -503,14 +533,15 @@ class AuthStore:
 
     def get_user_by_token(self, token: str) -> Dict[str, str] | None:
         with closing(_connect()) as connection, connection:
-            row = connection.execute(
+            row = _execute(
+                connection,
                 "SELECT user_id FROM auth_sessions WHERE token = ?",
                 (token,),
             ).fetchone()
         if row is None:
             return None
 
-        user_id = row[0]
+        user_id = row["user_id"]
         for user in self._users_by_username.values():
             if user["user_id"] == user_id:
                 return user
